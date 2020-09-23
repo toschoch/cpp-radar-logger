@@ -8,25 +8,28 @@
 
 #include <fstream>
 #include <vector>
+#include <opencv2/core.hpp>
+#include <opencv2/hdf.hpp>
 
 class Logger {
 public:
     Logger(std::string output_path);
     ~Logger();
 
-    int append_row(time_t t, std::vector<float> data, std::vector<float> data_fft);
+    int append_row(std::chrono::system_clock::time_point t, const std::string& group, const cv::Mat& mat) ;
+    int close();
 
 private:
 
-    int create_new_file();
-    int write_header();
+    std::string get_filename(std::chrono::system_clock::time_point t);
+    void assure_open();
 
 
     time_t file_time_epoch;
 
     std::string path;
     std::string current_file_name;
-    std::ofstream current_file;
+    cv::Ptr<cv::hdf::HDF5> current_file;
 };
 
 

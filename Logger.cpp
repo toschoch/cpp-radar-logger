@@ -6,7 +6,10 @@
 #include <iostream>
 #include <iomanip>
 #include <ctime>
-#include <sstream>
+#include <opencv2/core.hpp>
+#include <opencv2/hdf.hpp>
+
+#include "utils.h"
 
 using namespace std;
 
@@ -15,82 +18,65 @@ inline bool exists(const std::string& name) {
     return f.good();
 }
 
-Logger::Logger(string output_path) {
-    path = output_path;
-    create_new_file();
-}
+Logger::Logger(string output_path) : path(output_path), current_file_name(""), current_file(nullptr), file_time_epoch(0) {}
 
 Logger::~Logger() {
-    if (current_file.is_open())
+    current_file->close();
+}
+
+int Logger::append_row(chrono::system_clock::time_point t, const string& group, const cv::Mat& mat) {
+
+    // time label
+    auto time_label = time_in_fmt_MMM(t, "%Y-%m-%dT%H-%M-%S");
+    auto label = group+"/"+time_label;
+
+    assure_open();
+
+    // create group
+    if (!current_file->hlexists(group))
     {
-        current_file.close();
+        current_file->grcreate(group);
+    }
+
+    if (!current_file->hlexists(label))
+    {
+        current_file->dscreate(mat.rows, mat.cols, mat.type(), label, 9);
+    }
+
+    current_file->dswrite(mat,label);
+}
+
+void Logger::assure_open() {
+
+    auto now = chrono::system_clock::now();
+
+    auto filename = get_filename(now);
+
+    auto t_diff = chrono::system_clock::to_time_t(now) - file_time_epoch;
+
+    // make file rollover if necessary
+    if ((t_diff > 3600) || (!current_file))
+    {
+        if (current_file){
+            current_file->close();
+        }
+        current_file_name = filename;
+        current_file = cv::hdf::open(current_file_name);
+        file_time_epoch = chrono::system_clock::to_time_t(now);
+        cout << "start logging to '"<< current_file_name << "'..." << endl;
     }
 }
 
-int Logger::append_row(time_t t, vector<float> data, vector<float> data_fft) {
-
-    // check if new file is necessary
-    auto tDiff = (t - file_time_epoch);
-
-    auto n = data.size();
-
-    if (tDiff >= 3600) {
-        create_new_file();
-    }
-
-    // write data
-    current_file << t << ";";
-
-    for (int i=0; i<n; ++i){
-        current_file << data[i] << ";";
-    }
-
-    n = data_fft.size();
-
-    for (int i=0; i<(n-1); ++i){
-        current_file << data_fft[i] << ";";
-    }
-
-    current_file << data_fft[n-1] << endl;
-
-}
-
-int Logger::write_header() {
-    auto header_lines = 10;
-    current_file << "# time domain: " << 64 << endl;
-    header_lines--;
-    current_file << "# freq domain: " << 64 << endl;
-    header_lines--;
-    for (int i=header_lines;i>1;i--){
-        current_file << "# " << endl;
-    }
-    current_file << "# time; tData; fData" <<  endl;
-    header_lines--;
-}
-
-int Logger::create_new_file() {
-    file_time_epoch = time(nullptr);
-    auto tm = *localtime(&file_time_epoch);
+std::string Logger::get_filename(chrono::system_clock::time_point t) {
+    auto timer = chrono::system_clock::to_time_t(t);
+    auto tm = *localtime(&timer);
 
     ostringstream oss;
-    oss << path << "/" << put_time(&tm, "%Y-%m-%dT%H-00-00.dat");
-    current_file_name = oss.str();
+    oss << path << "/" << put_time(&tm, "%Y-%m-%dT%H-00-00.h5");
+    return oss.str();
+}
 
-    if (current_file.is_open())
-    {
-        current_file.close();
-    }
-
-    if(exists(current_file_name)) {
-        current_file.open(current_file_name, ios::app | ios::binary);
-    } else {
-        current_file.open(current_file_name, ios::out | ios::binary);
-        write_header();
-    }
-
-    if(current_file.good()) {
-        cout << "start logging to '"<< current_file_name << "'..." << endl;
-        return 0;
-    }
-    return 1;
+int Logger::close() {
+    current_file->close();
+    current_file = nullptr;
 }

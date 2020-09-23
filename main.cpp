@@ -48,14 +48,15 @@ void received_frame_data(void* context,
     //std::vector<float> frame (frame_info->sample_data, frame_info->sample_data+frame_info->num_samples_per_chirp);
 
     //std::vector<float> frame_fft;
-
+    auto t = std::chrono::system_clock::now();
     //cv::dft(frame, frame_fft);
-
     cout << "frame " << frame_info->frame_number << endl; //<< " processed" << std::endl;
+
 
     for (int ant=0; ant<frame_info->num_rx_antennas; ant++)
     {
         cout << "read data from antenna " << ant << endl;
+        cv::Mat data(frame_info->num_chirps, frame_info->num_samples_per_chirp, CV_32FC2);
         for (int chirp=0; chirp<frame_info->num_chirps; chirp++)
         {
             int chirp_start = chirp * frame_info->num_rx_antennas * frame_info->num_samples_per_chirp *
@@ -64,14 +65,23 @@ void received_frame_data(void* context,
             {
                 int offset = chirp_start +
                         2 * ant*frame_info->num_samples_per_chirp + sample;
-                cout << fixed << frame_info->sample_data[offset] << "+" << frame_info->sample_data[offset+1] << "j ";
+                data.at<cv::Vec2f>(chirp, sample)[0] = frame_info->sample_data[offset];
+                data.at<cv::Vec2f>(chirp, sample)[1] = frame_info->sample_data[offset+1];
+                //cout << fixed << frame_info->sample_data[offset] << "+" << frame_info->sample_data[offset+1] << "j ";
             }
-            cout << endl;
+            //cout << endl;
+
         }
+        cv::Mat data_fft;
+        cv::dft(data,data_fft,cv::DFT_ROWS|cv::DFT_COMPLEX_INPUT|::cv::DFT_COMPLEX_OUTPUT);
+        cout << data_fft;
         cout << endl;
+
+        logger.append_row(t,"antenna"+std::to_string(ant)+"_time",data);
+        //logger.append_row(t,"antenna"+std::to_string(ant)+"_frequency",data_fft);
     }
 
-   //logger.append_row(time(nullptr), frame, frame_fft);
+    logger.close();
 }
 
 int radar_auto_connect(void)
@@ -167,12 +177,16 @@ int main(void)
                                                         endpointBaseRadar,
                                                         AUTOMATIC_DATA_TRIGGER_TIME_US);
 
-        while (1)
-        {
-            // get raw data
-            res = ep_radar_base_get_frame_data(protocolHandle,
-                                               endpointBaseRadar,
-                                               1);
+        try {
+            while (1) {
+                // get raw data
+                res = ep_radar_base_get_frame_data(protocolHandle,
+                                                   endpointBaseRadar,
+                                                   1);
+            }
+        }
+        catch (...) {
+            logger.close();
         }
     }
 
