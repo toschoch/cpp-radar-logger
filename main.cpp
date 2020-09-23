@@ -39,6 +39,12 @@ void on_device_info_received(void *context, int32_t protocol_handle, uint8_t end
 
 }
 
+void on_chirp_duration_received(void *context, int32_t protocol_handle, uint8_t endpoint, uint32_t chirp_duration_ns)
+{
+    cout << "Chirp duration: " << chirp_duration_ns << "ns" << endl << endl;
+}
+
+
 // called every time ep_radar_base_get_frame_data method is called to return measured time domain signals
 void received_frame_data(void* context,
                          int32_t protocol_handle,
@@ -72,10 +78,15 @@ void received_frame_data(void* context,
             //cout << endl;
 
         }
-        cv::Mat data_fft;
+        /*cv::Mat data_fft;
         cv::dft(data,data_fft,cv::DFT_ROWS|cv::DFT_COMPLEX_INPUT|::cv::DFT_COMPLEX_OUTPUT);
-        cout << data_fft;
-        cout << endl;
+        cv::dft(data_fft.t(),data_fft,cv::DFT_ROWS|cv::DFT_COMPLEX_INPUT|::cv::DFT_COMPLEX_OUTPUT);
+
+        cv::Mat channels[2];
+
+        cv::split(data, channels);
+        cout << channels[0] << endl;
+        cout << channels[1] << endl;*/
 
         logger.append_row(t,"antenna"+std::to_string(ant)+"_time",data);
         //logger.append_row(t,"antenna"+std::to_string(ant)+"_frequency",data_fft);
@@ -165,12 +176,29 @@ int main(void)
         ep_radar_base_set_callback_device_info(on_device_info_received, NULL);
         ep_radar_base_set_callback_data_frame(received_frame_data, NULL);
         ep_radar_base_set_callback_frame_format(on_frame_format_setting_received, NULL);
+        ep_radar_base_set_callback_chirp_duration(on_chirp_duration_received, NULL);
 
         cout << "done!" << endl << endl;
         res = ep_radar_base_get_device_info(protocolHandle, endpointBaseRadar);
 
+
+        // disable automatic trigger
+        res = ep_radar_base_set_automatic_frame_trigger(protocolHandle,
+                                                        endpointBaseRadar,
+                                                        0);
+
+        cout << "configure...";
+        auto fmt = new Frame_Format_t;
+        fmt->num_chirps_per_frame = 32;
+        fmt->num_samples_per_chirp = 128;
+        fmt->rx_mask = 0x03;
+        fmt->eSignalPart = EP_RADAR_BASE_SIGNAL_I_AND_Q;
+        ep_radar_base_set_frame_format(protocolHandle, endpointBaseRadar, fmt);
+        cout << "done!" << endl;
+
         res = ep_radar_base_get_frame_format(protocolHandle, endpointBaseRadar);
 
+        res = ep_radar_base_get_chirp_duration(protocolHandle, endpointBaseRadar);
 
         // enable automatic trigger
         res = ep_radar_base_set_automatic_frame_trigger(protocolHandle,

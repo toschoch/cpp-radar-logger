@@ -21,7 +21,8 @@ inline bool exists(const std::string& name) {
 Logger::Logger(string output_path) : path(output_path), current_file_name(""), current_file(nullptr), file_time_epoch(0) {}
 
 Logger::~Logger() {
-    current_file->close();
+    if(current_file)
+        current_file->close();
 }
 
 int Logger::append_row(chrono::system_clock::time_point t, const string& group, const cv::Mat& mat) {
@@ -63,7 +64,6 @@ void Logger::assure_open() {
         current_file_name = filename;
         current_file = cv::hdf::open(current_file_name);
         file_time_epoch = chrono::system_clock::to_time_t(now);
-        cout << "start logging to '"<< current_file_name << "'..." << endl;
     }
 }
 

@@ -17,7 +17,7 @@ std::string time_in_fmt_MMM(std::chrono::system_clock::time_point now, const std
 {
     using namespace std::chrono;
 
-    // get number of milliseconds for the current second
+/*    // get number of milliseconds for the current second
     // (remainder after division into seconds)
     auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
 
@@ -32,5 +32,8 @@ std::string time_in_fmt_MMM(std::chrono::system_clock::time_point now, const std
     oss << std::put_time(&bt, fmt.c_str()); // HH:MM:SS
     oss << '.' << std::setfill('0') << std::setw(3) << ms.count();
 
-    return oss.str();
+    return oss.str();*/
+
+    double us = duration_cast<microseconds>(now.time_since_epoch()).count() * 1e-6;
+    return std::to_string(us);
 }
