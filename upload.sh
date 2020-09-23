@@ -1,0 +1,1 @@
+rsync -avzh -e 'ssh -p 2257' ./data Tobi@dietzi.ch:/volume1/homes/Tobi/rsync/radar/
