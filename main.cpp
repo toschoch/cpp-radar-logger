@@ -1,5 +1,4 @@
 
-#include <stdio.h>
 #include <string.h>
 #include <opencv2/core.hpp>
 #include <iostream>
@@ -8,41 +7,24 @@
 #include "COMPort.h"
 #include "EndpointRadarBase.h"
 #include "EndpointRadarFmcw.h"
+#include "EndpointRadarAdcxmc.h"
+#include "EndpointRadarP2G.h"
 #include "Logger.h"
+#include "callbacks.h"
+#include <csignal>
+#include <cstdlib>
+#include <chrono>
 
 using namespace std;
 
-#define AUTOMATIC_DATA_TRIGGER_TIME_US (1500000)	// get ADC data each 1ms in automatic trigger mode
+#define AUTOMATIC_DATA_TRIGGER_TIME_US (30000)	// get ADC data each 1ms in automatic trigger mode
 
-Logger logger("data");
-
-void on_frame_format_setting_received(void *context, int32_t protocol_handle, uint8_t endpoint, const Frame_Format_t *frame_format)
-{
-    cout << "Frame info:" << endl;
-    cout << "chrips per frame: " << frame_format->num_chirps_per_frame << endl;
-    cout << "samples per chrip: " << frame_format->num_samples_per_chirp << endl;
-    cout << "real/complex/interleaved: " << frame_format->eSignalPart << endl;
-    cout << "rx mask: "  << int(frame_format->rx_mask) << endl << endl;
-
-}
-
-void on_device_info_received(void *context, int32_t protocol_handle, uint8_t endpoint, const Device_Info_t *device_info)
-{
-    cout << "Device info:" << endl;
-    cout << device_info->description << endl;
-    cout << "antennas tx: " << int(device_info->num_tx_antennas) << endl;
-    cout << "antennas rx: " << int(device_info->num_rx_antennas) << endl;
-    cout << "frequency range: [" << device_info->min_rf_frequency_kHz << " - " << device_info->max_rf_frequency_kHz << "] kHz"<< endl;
-    cout << "maximal tx power: " << int(device_info->max_tx_power) << endl;
-    cout << "data format: " << device_info->data_format << endl;
-    cout << "temperature sensors: " << int(device_info->num_temp_sensors) << endl << endl;
-
-}
-
-void on_chirp_duration_received(void *context, int32_t protocol_handle, uint8_t endpoint, uint32_t chirp_duration_ns)
-{
-    cout << "Chirp duration: " << chirp_duration_ns << "ns" << endl << endl;
-}
+Logger logger("/home/pi/radar/data");
+int protocolHandle = 0;
+int endpointBaseRadar = 0;
+int endpointFmcwRadar = 0;
+int endpointAdcRadar = 0;
+int endpointP2GRadar = 0;
 
 
 // called every time ep_radar_base_get_frame_data method is called to return measured time domain signals
@@ -56,12 +38,12 @@ void received_frame_data(void* context,
     //std::vector<float> frame_fft;
     auto t = std::chrono::system_clock::now();
     //cv::dft(frame, frame_fft);
-    cout << "frame " << frame_info->frame_number << endl; //<< " processed" << std::endl;
-
+    if (frame_info->frame_number % 50 == 0)
+        cout << "frame " << frame_info->frame_number << endl; //<< " processed" << std::endl;
 
     for (int ant=0; ant<frame_info->num_rx_antennas; ant++)
     {
-        cout << "read data from antenna " << ant << endl;
+        //cout << "read data from antenna " << ant << endl;
         cv::Mat data(frame_info->num_chirps, frame_info->num_samples_per_chirp, CV_32FC2);
         for (int chirp=0; chirp<frame_info->num_chirps; chirp++)
         {
@@ -92,60 +74,41 @@ void received_frame_data(void* context,
         //logger.append_row(t,"antenna"+std::to_string(ant)+"_frequency",data_fft);
     }
 
-    logger.close();
+    // assure a good file
+    //logger.close();
 }
 
-int radar_auto_connect(void)
-{
-    int radar_handle = 0;
-    int num_of_ports = 0;
-    char comp_port_list[256];
-    char* comport;
-    const char *delim = ";";
-
-    //----------------------------------------------------------------------------
-    num_of_ports = com_get_port_list(comp_port_list, (size_t)256);
-
-    if (num_of_ports == 0)
-    {
-        return -1;
-    }
-    else
-    {
-        comport = strtok(comp_port_list, delim);
-
-        while (num_of_ports > 0)
-        {
-            num_of_ports--;
-
-            // open COM port
-            radar_handle = protocol_connect(comport);
-
-            if (radar_handle >= 0)
-            {
-                break;
-            }
-
-            comport = strtok(NULL, delim);
-        }
-
-        return radar_handle;
-    }
-
-}
 
 int main(void)
 {
     int res = -1;
-    int protocolHandle = 0;
-    int endpointBaseRadar = 0;
-    int endpointFmcwRadar = 0;
+
 
     cout.precision(3);
 
     // open COM port
     std::cout << "try to find connected radar..." << std::endl;
     protocolHandle = radar_auto_connect();
+
+    //signal requires lam take an int parameter
+    //this parameter is equal to the signals value
+    auto lam =
+            [] (int i) { cout << "aborting..." << endl;
+                cout << "close files..."  << endl; logger.close();
+                cout << "disconnect..."  << endl;
+                ep_radar_base_set_automatic_frame_trigger(protocolHandle,endpointBaseRadar,0);
+                protocol_disconnect(protocolHandle);exit(0); };
+
+    //^C
+    signal(SIGINT, lam);
+    //abort()
+    signal(SIGABRT, lam);
+    //sent by "kill" command
+    signal(SIGTERM, lam);
+    //^Z
+    signal(SIGTSTP, lam);
+
+
 
     // get endpoint ids
     if (protocolHandle >= 0)
@@ -160,6 +123,16 @@ int main(void)
             if (ep_radar_fmcw_is_compatible_endpoint(protocolHandle, i) == 0)
             {
                 endpointFmcwRadar = i;
+                continue;
+            }
+            if (ep_radar_adcxmc_is_compatible_endpoint(protocolHandle, i) == 0)
+            {
+                endpointAdcRadar = i;
+                continue;
+            }
+            if (ep_radar_p2g_is_compatible_endpoint(protocolHandle, i) == 0)
+            {
+                endpointP2GRadar = i;
                 continue;
             }
         }
@@ -177,15 +150,18 @@ int main(void)
         ep_radar_base_set_callback_data_frame(received_frame_data, NULL);
         ep_radar_base_set_callback_frame_format(on_frame_format_setting_received, NULL);
         ep_radar_base_set_callback_chirp_duration(on_chirp_duration_received, NULL);
+        ep_radar_fmcw_set_callback_fmcw_configuration(on_fmcw_config_received, NULL);
+        ep_radar_adcxmc_set_callback_adc_configuration(on_adc_config_received, NULL);
+        ep_radar_p2g_set_callback_pga_level(on_adc_gain_level_received, NULL);
 
         cout << "done!" << endl << endl;
-        res = ep_radar_base_get_device_info(protocolHandle, endpointBaseRadar);
+        ep_radar_base_get_device_info(protocolHandle, endpointBaseRadar);
 
 
         // disable automatic trigger
-        res = ep_radar_base_set_automatic_frame_trigger(protocolHandle,
-                                                        endpointBaseRadar,
-                                                        0);
+        ep_radar_base_set_automatic_frame_trigger(protocolHandle,
+                                                  endpointBaseRadar,
+                                                  0);
 
         cout << "configure...";
         auto fmt = new Frame_Format_t;
@@ -196,25 +172,25 @@ int main(void)
         ep_radar_base_set_frame_format(protocolHandle, endpointBaseRadar, fmt);
         cout << "done!" << endl;
 
-        res = ep_radar_base_get_frame_format(protocolHandle, endpointBaseRadar);
+        ep_radar_p2g_set_pga_level(protocolHandle, endpointP2GRadar, 3);
 
-        res = ep_radar_base_get_chirp_duration(protocolHandle, endpointBaseRadar);
+        ep_radar_base_get_frame_format(protocolHandle, endpointBaseRadar);
+
+        ep_radar_base_get_chirp_duration(protocolHandle, endpointBaseRadar);
+        ep_radar_fmcw_get_fmcw_configuration(protocolHandle, endpointFmcwRadar);
+        ep_radar_adcxmc_get_adc_configuration(protocolHandle, endpointAdcRadar);
+        ep_radar_p2g_get_pga_level(protocolHandle, endpointP2GRadar);
 
         // enable automatic trigger
-        res = ep_radar_base_set_automatic_frame_trigger(protocolHandle,
-                                                        endpointBaseRadar,
-                                                        AUTOMATIC_DATA_TRIGGER_TIME_US);
+        ep_radar_base_set_automatic_frame_trigger(protocolHandle,
+                                                  endpointBaseRadar,
+                                                  AUTOMATIC_DATA_TRIGGER_TIME_US);
 
-        try {
-            while (1) {
-                // get raw data
-                res = ep_radar_base_get_frame_data(protocolHandle,
-                                                   endpointBaseRadar,
-                                                   1);
-            }
-        }
-        catch (...) {
-            logger.close();
+        while (1) {
+            // get raw data
+            ep_radar_base_get_frame_data(protocolHandle,
+                                         endpointBaseRadar,
+                                         1);
         }
     }
 
