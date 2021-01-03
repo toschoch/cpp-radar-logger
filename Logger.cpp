@@ -13,7 +13,7 @@
 
 using namespace std;
 
-Logger::Logger(string output_path) : path(output_path), current_file_name(""), current_file(nullptr), file_time_epoch(0) {}
+Logger::Logger(string output_path) : path(output_path), current_file_name(""), current_file(), file_time_epoch(0) {}
 
 Logger::~Logger() {
     if(current_file)
@@ -84,5 +84,5 @@ std::string Logger::get_filename(chrono::system_clock::time_point t) {
 
 int Logger::close() {
     current_file->close();
-    current_file = nullptr;
+    current_file = cv::Ptr<cv::hdf::HDF5>();
 }
