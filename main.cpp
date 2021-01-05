@@ -1,15 +1,14 @@
 
 #include <string.h>
-#include <opencv2/core/core.hpp>
+//#include <opencv2/core/core.hpp>
 #include <iostream>
 #include <vector>
 #include "Protocol.h"
-#include "COMPort.h"
 #include "EndpointRadarBase.h"
 #include "EndpointRadarFmcw.h"
 #include "EndpointRadarAdcxmc.h"
 #include "EndpointRadarP2G.h"
-#include "Logger.h"
+//#include "Logger.h"
 #include "callbacks.h"
 #include <csignal>
 #include <cstdlib>
@@ -19,7 +18,7 @@ using namespace std;
 
 #define AUTOMATIC_DATA_TRIGGER_TIME_US (30000)	// get ADC data each 1ms in automatic trigger mode
 
-Logger logger("/home/pi/radar/data");
+//Logger logger("/home/pi/radar/data");
 int protocolHandle = 0;
 int endpointBaseRadar = 0;
 int endpointFmcwRadar = 0;
@@ -44,7 +43,7 @@ void received_frame_data(void* context,
     for (int ant=0; ant<frame_info->num_rx_antennas; ant++)
     {
         //cout << "read data from antenna " << ant << endl;
-        cv::Mat data(frame_info->num_chirps, frame_info->num_samples_per_chirp, CV_32FC2);
+//        cv::Mat data(frame_info->num_chirps, frame_info->num_samples_per_chirp, CV_32FC2);
         for (int chirp=0; chirp<frame_info->num_chirps; chirp++)
         {
             int chirp_start = chirp * frame_info->num_rx_antennas * frame_info->num_samples_per_chirp *
@@ -53,11 +52,11 @@ void received_frame_data(void* context,
             {
                 int offset = chirp_start +
                         2 * ant*frame_info->num_samples_per_chirp + sample;
-                data.at<cv::Vec2f>(chirp, sample)[0] = frame_info->sample_data[offset];
-                data.at<cv::Vec2f>(chirp, sample)[1] = frame_info->sample_data[offset+1];
-                //cout << fixed << frame_info->sample_data[offset] << "+" << frame_info->sample_data[offset+1] << "j ";
+//                data.at<cv::Vec2f>(chirp, sample)[0] = frame_info->sample_data[offset];
+//                data.at<cv::Vec2f>(chirp, sample)[1] = frame_info->sample_data[offset+1];
+                cout << fixed << frame_info->sample_data[offset] << "+" << frame_info->sample_data[offset+1] << "j ";
             }
-            //cout << endl;
+            cout << endl;
 
         }
         /*cv::Mat data_fft;
@@ -70,7 +69,7 @@ void received_frame_data(void* context,
         cout << channels[0] << endl;
         cout << channels[1] << endl;*/
 
-        logger.append_row(t,"antenna"+std::to_string(ant)+"_time",data);
+        //logger.append_row(t,"antenna"+std::to_string(ant)+"_time",data);
         //logger.append_row(t,"antenna"+std::to_string(ant)+"_frequency",data_fft);
     }
 
@@ -94,7 +93,7 @@ int main(void)
     //this parameter is equal to the signals value
     auto lam =
             [] (int i) { cout << "aborting..." << endl;
-                cout << "close files..."  << endl; logger.close();
+                cout << "close files..."  << endl; //logger.close();
                 cout << "disconnect..."  << endl;
                 ep_radar_base_set_automatic_frame_trigger(protocolHandle,endpointBaseRadar,0);
                 protocol_disconnect(protocolHandle);exit(0); };

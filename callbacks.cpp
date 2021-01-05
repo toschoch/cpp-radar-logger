@@ -25,6 +25,7 @@ int radar_auto_connect(void)
 
     if (num_of_ports == 0)
     {
+        std::cout << "no comports found!" << std::endl;
         return -1;
     }
     else
@@ -34,6 +35,8 @@ int radar_auto_connect(void)
         while (num_of_ports > 0)
         {
             num_of_ports--;
+
+            std::cout << "try comport '" << comport << "'..." << std::endl;
 
             // open COM port
             radar_handle = protocol_connect(comport);
