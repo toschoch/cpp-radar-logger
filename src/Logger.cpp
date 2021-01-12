@@ -2,14 +2,14 @@
 // Created by tobi on 20.09.20.
 //
 
-#include "Logger.h"
+#include "../include/Logger.h"
 #include <iostream>
 #include <iomanip>
 #include <ctime>
 #include <opencv2/core.hpp>
 #include <opencv2/hdf.hpp>
 
-#include "utils.h"
+#include "../include/utils.h"
 
 using namespace std;
 

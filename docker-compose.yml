@@ -1,9 +1,0 @@
-version: '2'
-services:
-  radar-test:
-    build: .
-    privileged: true
-    restart: always
-    network_mode: "host"
-    labels:
-      io.balena.features.kernel-modules: '1'

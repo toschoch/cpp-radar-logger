@@ -1,0 +1,29 @@
+FROM ubuntu AS builder
+
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" TZ="Europe/Zurich" apt-get install -y \
+                      build-essential cmake git wget curl gpg # libopenblas-base libopencv-dev
+RUN apt-get install -y libzmq3-dev libzmqpp-dev
+
+
+WORKDIR ./src
+
+COPY RadarApi ./RadarApi
+COPY *.cpp ./
+COPY *.h ./
+COPY CMakeLists.txt ./
+
+WORKDIR ../build
+
+RUN cmake ../src && make
+
+FROM ubuntu
+RUN apt-get update && apt-get install -y libzmqpp4 && rm -rf /var/lib/apt/lists/*
+
+ENV UDEV=1
+
+#RUN install_packages libopenblas-base libopencv-core3.2 libopencv-contrib3.2
+COPY --from=builder /build/RadarReader .
+
+CMD ./RadarReader
+
+
