@@ -9,18 +9,19 @@
 #include <sstream>
 #include <string>
 #include <random>
+#include <algorithm>
 
 #include "../include/utils.h"
 
 // ...
 
-std::string get_env_var( std::string const & key ) const
+std::string get_env_var( std::string const & key )
 {
     char * val = getenv( key.c_str() );
     return val == NULL ? std::string("") : std::string(val);
 }
 
-static std::vector<float> generate_data(size_t size)
+std::vector<float> generate_data(size_t size)
 {
     using value_type = float;
     // We use static in order to instantiate the random engine

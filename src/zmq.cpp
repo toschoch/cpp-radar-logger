@@ -27,9 +27,9 @@ void ZMQ::start() {
     socket.bind(endpoint);
 }
 
-bool ZMQ::send_tensor(shared_ptr<arrow::Tensor> tensor) {
+bool ZMQ::send_buffer(shared_ptr<arrow::Buffer> buffer) {
     zmqpp::message message;
-    message.add_raw(written_buffer->data(), written_buffer->size());
+    message.add_raw(buffer->data(), buffer->size());
 
-    socket.send(message);
+    return socket.send(message);
 }

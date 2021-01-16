@@ -5,10 +5,12 @@
 #include "Protocol.h"
 #include "EndpointRadarBase.h"
 #include "../include/radar.h"
+#include "../include/utils.h"
+#include "../include/arrow.h"
+#include "../include/zmq.h"
 #include <csignal>
 #include <cstdlib>
 #include <chrono>
-#include <zmqpp/zmqpp.hpp>
 
 using namespace std;
 
@@ -42,6 +44,7 @@ void received_frame_data(void* context,
     }
 };
 
+auto zmq_server = ZMQ();
 
 auto radar = Radar();
 
@@ -113,6 +116,20 @@ int main(void)
 
         exit(0);
     }
+
+
+    vector<int64_t> dims = {2, 512, 256, 2};
+    vector<float> data = generate_data(524288);
+
+    auto buf = create_and_serialize_tensor(dims, data);
+
+    cout << "serialized data as tensor: " << buf->size() << " bytes" << endl;
+
+    zmq_server.start();
+
+    auto success = zmq_server.send_buffer(buf);
+
+    cout << "sent data through buffer " << success << endl;
 
     return res;
 }
