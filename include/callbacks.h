@@ -7,6 +7,7 @@
 
 #include <EndpointRadarBase.h>
 #include <EndpointRadarFmcw.h>
+#include <EndpointRadarAdcxmc.h>
 
 int radar_auto_connect(void);
 

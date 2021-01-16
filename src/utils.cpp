@@ -8,10 +8,31 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <random>
 
 #include "../include/utils.h"
 
 // ...
+
+std::string get_env_var( std::string const & key ) const
+{
+    char * val = getenv( key.c_str() );
+    return val == NULL ? std::string("") : std::string(val);
+}
+
+static std::vector<float> generate_data(size_t size)
+{
+    using value_type = float;
+    // We use static in order to instantiate the random engine
+    // and the distribution once only.
+    // It may provoke some thread-safety issues.
+    static std::uniform_real_distribution<value_type> distribution(0,1);
+    static std::default_random_engine generator;
+
+    std::vector<value_type> data(size);
+    std::generate(data.begin(), data.end(), []() { return distribution(generator); });
+    return data;
+}
 
 std::string time_in_fmt_MMM(std::chrono::system_clock::time_point now, const std::string& fmt)
 {

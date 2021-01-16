@@ -5,12 +5,17 @@ add_subdirectory(RadarApi)
 
 set(CMAKE_CXX_STANDARD 14)
 
+
 #find_package(OpenCV REQUIRED COMPONENTS core hdf)
 
+#find_package(Arrow REQUIRED)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+find_package(nlohmann_json 3.2.0 REQUIRED)
 
 FILE(GLOB CppSources src/*.cpp)
 
-add_executable(${PROJECT_NAME} ${CppSources})
-target_link_libraries(${PROJECT_NAME} PUBLIC radarapi -lzmqpp -lzmq)
+add_executable(${PROJECT_NAME} src/main.cpp src/callbacks.cpp src/radar.cpp) #${CppSources})
+target_link_libraries(${PROJECT_NAME} PRIVATE radarapi -lzmqpp -lzmq )#arrow_static Threads::Threads)
 #target_link_libraries(${PROJECT_NAME} PUBLIC
         #opencv_core opencv_hdf)

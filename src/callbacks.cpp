@@ -3,14 +3,19 @@
 //
 
 #include <iostream>
+#include <chrono>
 #include <EndpointRadarBase.h>
 #include <COMPort.h>
 #include <cstring>
 #include <Protocol.h>
 #include <EndpointRadarFmcw.h>
 #include <EndpointRadarAdcxmc.h>
+#include <nlohmann/json.hpp>
+#include <iomanip>
+#include <fstream>
 
 using namespace std;
+using json = nlohmann::json;
 
 int radar_auto_connect(void)
 {
@@ -61,20 +66,22 @@ void on_frame_format_setting_received(void *context, int32_t protocol_handle, ui
     cout << "samples per chrip: " << frame_format->num_samples_per_chirp << endl;
     cout << "real/complex/interleaved: " << frame_format->eSignalPart << endl;
     cout << "rx mask: "  << int(frame_format->rx_mask) << endl << endl;
-
 }
 
 void on_device_info_received(void *context, int32_t protocol_handle, uint8_t endpoint, const Device_Info_t *device_info)
 {
-    cout << "Device info:" << endl;
-    cout << device_info->description << endl;
-    cout << "antennas tx: " << int(device_info->num_tx_antennas) << endl;
-    cout << "antennas rx: " << int(device_info->num_rx_antennas) << endl;
-    cout << "frequency range: [" << device_info->min_rf_frequency_kHz << " - " << device_info->max_rf_frequency_kHz << "] kHz"<< endl;
-    cout << "maximal tx power: " << int(device_info->max_tx_power) << endl;
-    cout << "data format: " << device_info->data_format << endl;
-    cout << "temperature sensors: " << int(device_info->num_temp_sensors) << endl << endl;
+    json j;
+    j["device"] = device_info->description;
+    j["antennas"]["tx"] = int(device_info->num_tx_antennas);
+    j["antennas"]["rx"] = int(device_info->num_rx_antennas);
+    j["frequency"]["min"] = int(device_info->min_rf_frequency_kHz);
+    j["frequency"]["max"] = int(device_info->max_rf_frequency_kHz);
+    j["frequency"]["bandwidth"] = int(device_info->max_rf_frequency_kHz - device_info->min_rf_frequency_kHz);
+    j["max tx power"] = int(device_info->max_tx_power);
+    j["data format"] = int(device_info->data_format);
+    j["temperature sensors"] = int(device_info->num_temp_sensors);
 
+    cout << j.dump(4) << endl;
 }
 
 void on_chirp_duration_received(void *context, int32_t protocol_handle, uint8_t endpoint, uint32_t chirp_duration_ns)

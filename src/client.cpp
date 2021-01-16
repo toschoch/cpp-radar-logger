@@ -16,23 +16,20 @@ int main(int argc, char *argv[]) {
     zmqpp::context context;
 
     // generate a push socket
-    zmqpp::socket_type type = zmqpp::socket_type::req;
+    zmqpp::socket_type type = zmqpp::socket_type::subscribe;
     zmqpp::socket socket (context, type);
 
     // open the connection
-    cout << "Connecting to hello world server…" << endl;
+    cout << "Connecting to server…" << endl;
     socket.connect(endpoint);
-    int request_nbr;
-    for (request_nbr = 0; request_nbr != 10; request_nbr++) {
-        // send a message
-        cout << "Sending Hello " << request_nbr <<"…" << endl;
-        zmqpp::message message;
-        // compose a message from a string and a number
-        message << "Hello";
-        socket.send(message);
-        string buffer;
-        socket.receive(buffer);
 
-        cout << "Received World " << request_nbr << endl;
+    socket.set(zmqpp::socket_option::subscribe, "");
+
+    while (1) {
+        // get a message
+        zmqpp::message msg;
+        cout << "waiting for a message..." << endl;
+        socket.receive(msg);
+        cout << "got message of " << msg.size(0) << " bytes" << endl;
     }
 }

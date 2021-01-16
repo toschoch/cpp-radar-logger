@@ -8,4 +8,8 @@
 
 std::string time_in_fmt_MMM(std::chrono::system_clock::time_point now, const std::string& fmt);
 
+std::string get_env_var( std::string const & key ) const;
+
+static std::vector<float> generate_data(size_t size);
+
 #endif //RADARREADER_UTILS_H
