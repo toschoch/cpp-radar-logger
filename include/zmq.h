@@ -12,7 +12,7 @@
 class ZMQ {
 protected:
     zmqpp::context context;
-    std::string endpoint;
+    std::string const endpoint;
 
 public:
     ZMQ();

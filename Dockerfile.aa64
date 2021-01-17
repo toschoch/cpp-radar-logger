@@ -22,7 +22,7 @@ WORKDIR ../build
 RUN cmake .. /src && make
 
 FROM ubuntu
-RUN apt-get update && apt-get install -y libzmqpp4 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libzmqpp4 && rm -rf /var/lib/apt/lists/* && mkdir /radar/
 
 ENV UDEV=1
 

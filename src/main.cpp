@@ -1,5 +1,4 @@
 
-#include <string.h>
 #include <iostream>
 #include <vector>
 #include "Protocol.h"
@@ -11,8 +10,11 @@
 #include <csignal>
 #include <cstdlib>
 #include <chrono>
+#include <thread>
+#include <exception>
 
 using namespace std;
+using namespace std::chrono_literals;
 
 #define AUTOMATIC_DATA_TRIGGER_TIME_US (30000)	// get ADC data each 1ms in automatic trigger mode
 
@@ -79,7 +81,7 @@ int main(void)
     {
         cout << "success! connecting...";
         cout << "done!" << endl << endl;
-        radar.request_device_info();
+        radar.update_settings();
 
         // disable automatic trigger
         radar.stop_measurement();
@@ -91,28 +93,37 @@ int main(void)
         fmt->rx_mask = 0x03;
         fmt->eSignalPart = EP_RADAR_BASE_SIGNAL_I_AND_Q;
         radar.set_frame_format(fmt);
+
+        radar.set_pga_level(3);
+
         cout << "done!" << endl;
 
-        /*ep_radar_p2g_set_pga_level(protocolHandle, endpointP2GRadar, 3);
+        cout << radar.settings.dump(4) << endl;
 
-        ep_radar_base_get_frame_format(protocolHandle, endpointBaseRadar);
 
-        ep_radar_base_get_chirp_duration(protocolHandle, endpointBaseRadar);
-        ep_radar_fmcw_get_fmcw_configuration(protocolHandle, endpointFmcwRadar);
-        ep_radar_adcxmc_get_adc_configuration(protocolHandle, endpointAdcRadar);
-        ep_radar_p2g_get_pga_level(protocolHandle, endpointP2GRadar);
+        while (true) {
+            try {
+                while (1) {
+                    // get raw data
+                    cout << "get new data..." << endl;
+                    radar.request_data(10);
+                    std::this_thread::sleep_for(500ms);
+                }
+            } catch (std::runtime_error err) {
 
-        // enable automatic trigger
-        ep_radar_base_set_automatic_frame_trigger(protocolHandle,
-                                                  endpointBaseRadar,
-                                                  AUTOMATIC_DATA_TRIGGER_TIME_US);*/
+                do {
+                    cout << "try reconnecting ..." << endl;
+                    if (radar.connect()) {
+                        cout << "successfully reconnected" << endl;
+                        break;
+                    }
 
-/*        while (1) {
-            // get raw data
-            ep_radar_base_get_frame_data(protocolHandle,
-                                         endpointBaseRadar,
-                                         1);
-        }*/
+                    cout << "wait for 15s ..." << endl;
+                    this_thread::sleep_for(15s);
+
+                } while (!radar.is_connected());
+            }
+        }
 
         exit(0);
     }

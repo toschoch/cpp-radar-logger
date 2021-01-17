@@ -10,15 +10,16 @@
 #include <string>
 #include <random>
 #include <algorithm>
+#include <vector>
 
 #include "../include/utils.h"
 
 // ...
 
-std::string get_env_var( std::string const & key )
+std::string get_env_var( std::string const & key, std::string const & default_value = std::string(""))
 {
     char * val = getenv( key.c_str() );
-    return val == NULL ? std::string("") : std::string(val);
+    return val == nullptr ? default_value : std::string(val);
 }
 
 std::vector<float> generate_data(size_t size)

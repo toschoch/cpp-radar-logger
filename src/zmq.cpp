@@ -12,13 +12,8 @@
 
 using namespace std;
 
-ZMQ::ZMQ() : socket(context, zmqpp::socket_type::pub) {
-    string port = get_env_var("ZMQ_PORT");
-    if (port == "") {
-        port = "5555";
-    }
-    endpoint = string("tcp://*:") + port;
-}
+ZMQ::ZMQ() : socket(context, zmqpp::socket_type::pub),
+             endpoint(string("tcp://*:") + get_env_var("ZMQ_PORT", "5555")) {}
 
 void ZMQ::start() {
     cout << "starting zmq server on " << endpoint << "..." << endl;
