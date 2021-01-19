@@ -7,6 +7,7 @@
 #include <string>
 #include <chrono>
 #include <vector>
+#include <map>
 
 std::string time_in_fmt_MMM(std::chrono::system_clock::time_point now, const std::string& fmt);
 

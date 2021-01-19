@@ -34,6 +34,7 @@ bool Radar::connect() {
     if (found) {
         identify_available_apis();
         register_settings_callbacks();
+        send_settings_to_radar();
     }
 
     return found;
@@ -50,7 +51,6 @@ void Radar::restore_settings() {
     ifstream input(settings_file);
     if (input.good()) {
         input >> settings;
-        send_settings_to_radar();
     }
 }
 
@@ -58,17 +58,35 @@ void Radar::send_settings_to_radar() {
     auto fmt = new Frame_Format_t;
     fmt->num_chirps_per_frame = settings["data"]["chirps per frame"].get<int>();
     fmt->num_samples_per_chirp = settings["data"]["samples per chrip"].get<int>();
-    fmt->rx_mask = 0x03;
-    fmt->eSignalPart = EP_RADAR_BASE_SIGNAL_I_AND_Q;
+    auto activated = settings["antennas"]["rx"]["activated"];
+    auto mask = 0x00;
+    for (auto & it : activated) {
+        int ant = it;
+        mask = mask | (0x01 << ant);
+    }
+    fmt->rx_mask = mask;
+    auto signal_part = settings["data"]["signal part"].get<string>();
+    Signal_Part_t signal_enum;
+    for (const auto & signal_part_name : signal_part_names)
+        if (signal_part_name.second == signal_part)
+            signal_enum = signal_part_name.first;
+    fmt->eSignalPart = signal_enum;
     set_frame_format(fmt);
 
     auto fmcw = new Fmcw_Configuration_t;
     fmcw->tx_power = settings["antennas"]["tx"]["power"]["current"].get<int>();
     fmcw->upper_frequency_kHz = settings["frequency"]["high"].get<int>();
     fmcw->lower_frequency_kHz = settings["frequency"]["low"].get<int>();
-    fmcw->direction = EP_RADAR_FMCW_DIR_UPCHIRP_ONLY;
+    auto chirp_direction = settings["frequency"]["chirp"]["direction"].get<string>();
+    Chirp_Direction_t chirp_enum;
+    for (const auto & chirp_name : chirp_direction_names)
+        if (chirp_name.second == chirp_direction)
+            chirp_enum = chirp_name.first;
+    fmcw->direction = chirp_enum;
 
     set_fmcw_configuration(fmcw);
+
+    set_pga_level(settings["sampling"]["programmable gain level"].get<int>());
 }
 
 void Radar::store_settings() {
@@ -172,12 +190,12 @@ void Radar::start_measurement(int interval_us, int reconnection_interval_s) {
     settings["data"]["frame interval"]["unit"] = "us";
     store_settings();
 
-    ep_radar_base_set_automatic_frame_trigger(protocolHandle,
-                                              endpointBaseRadar,
-                                              interval_us);
 
     while (true) {
         try {
+            ep_radar_base_set_automatic_frame_trigger(protocolHandle,
+                                                      endpointBaseRadar,
+                                                      interval_us);
             while (true) {
                 request_data(true);
                 this_thread::sleep_for(5ms);
@@ -189,6 +207,7 @@ void Radar::start_measurement(int interval_us, int reconnection_interval_s) {
                 cout << "try reconnecting ..." << endl;
                 if (connect()) {
                     cout << "successfully reconnected" << endl;
+                    stop_measurement();
                     break;
                 }
 
