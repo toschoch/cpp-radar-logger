@@ -17,6 +17,8 @@ protected:
 public:
     ZMQ();
 
+    std::string get_endpoint() const;
+
     void start();
 
     bool send_buffer(std::shared_ptr<arrow::Buffer> buffer);

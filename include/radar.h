@@ -40,10 +40,15 @@ class Radar {
              {Chirp_Direction_t::EP_RADAR_FMCW_DIR_ALTERNATING_FIRST_UP, "alternating first up"},
              {Chirp_Direction_t::EP_RADAR_FMCW_DIR_ALTERNATING_FIRST_DOWN, "alternating first down"}};
 
+    void send_settings_to_radar();
+
 public:
 
     Radar();
+    ~Radar();
     json settings;
+
+    std::function<void(const Frame_Info_t*)> data_callback;
 
     void store_settings();
     void restore_settings();
@@ -52,27 +57,33 @@ public:
     bool connect();
     void disconnect() const;
 
-    bool is_connected() { return (protocolHandle >= 0); };
+    bool is_connected() const { return (protocolHandle >= 0); };
 
     void identify_available_apis();
-    void register_callbacks();
 
-    void start_measurement(int interval_us) const;
+    void register_data_received_callback(const std::function<void(const Frame_Info_t*)>& callback);
+    void register_settings_callbacks();
+
+    void start_measurement(int interval_us, int reconnection_interval_s = 15);
     void stop_measurement() const;
 
     // setters
     void set_frame_format(const Frame_Format_t* fmt) const;
+    void set_fmcw_configuration(const Fmcw_Configuration_t* config) const;
     void set_pga_level(uint16_t ppa_level) const;
+    void set_adc_configuration(const Adc_Xmc_Configuration_t* config) const;
 
     // requests
     void request_data(uint8_t wait) const;
 
     void request_device_info() const;
     void request_chirp_duration() const;
+    void request_minimal_frame_interval() const;
     void request_frame_format() const;
     void request_fmcw_configuration() const;
     void request_chirp_velocity() const;
     void request_adc_configuration() const;
+    void request_adc_gain_level() const;
 
 
     // callbacks
@@ -83,6 +94,7 @@ public:
     static void on_fmcw_bandwith_per_second_received(void *context, int32_t protocol_handle, uint8_t endpoint, uint32_t bandwidth_per_second);
     static void on_adc_gain_level_received(void *context, int32_t protocol_handle, uint8_t endpoint, uint16_t pga_level_val);
     static void on_adc_config_received(void *context, int32_t protocol_handle, uint8_t endpoint, const Adc_Xmc_Configuration_t *adc_configuration);
+    static void on_minimal_frame_interval_received(void *context, int32_t protocol_handle, uint8_t endpoint, uint32_t min_frame_interval_us);
 
     static void handle_error_codes(int32_t error_code);
 
@@ -91,7 +103,9 @@ public:
 int radar_auto_connect(void);
 
 
-class RadarConnectionLost : public std::runtime_error {};
+struct RadarConnectionLost : public virtual std::runtime_error {
+    using std::runtime_error::runtime_error ;
+};
 
 
 #endif //RADARREADER_RADAR_H

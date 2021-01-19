@@ -7,10 +7,8 @@
 #include "../include/utils.h"
 #include "../include/arrow.h"
 #include "../include/zmq.h"
-#include <csignal>
 #include <cstdlib>
 #include <chrono>
-#include <thread>
 #include <exception>
 
 using namespace std;
@@ -19,10 +17,7 @@ using namespace std::chrono_literals;
 #define AUTOMATIC_DATA_TRIGGER_TIME_US (30000)	// get ADC data each 1ms in automatic trigger mode
 
 // called every time ep_radar_base_get_frame_data method is called to return measured time domain signals
-void received_frame_data(void* context,
-                         int32_t protocol_handle,
-                         uint8_t endpoint,
-                         const Frame_Info_t* frame_info)
+void received_frame_data(const Frame_Info_t* frame_info)
 {
     auto t = std::chrono::system_clock::now();
     if (frame_info->frame_number % 50 == 0)
@@ -46,36 +41,17 @@ void received_frame_data(void* context,
     }
 };
 
-auto zmq_server = ZMQ();
-
-auto radar = Radar();
-
 int main(void)
 {
     int res = -1;
 
+    auto zmq_server = ZMQ();
+    auto radar = Radar();
 
-    // open COM port
     cout << "try to find connected radar..." << endl;
     radar.connect();
 
-    //signal requires lam take an int parameter
-    //this parameter is equal to the signals value
-    auto lam =
-            [] (int i) { cout << "aborting..." << endl;
-                cout << "close files..."  << endl; //logger.close();
-                cout << "disconnect..."  << endl;
-                radar.disconnect();
-                exit(0); };
-
-    //^C
-    signal(SIGINT, lam);
-    //abort()
-    signal(SIGABRT, lam);
-    //sent by "kill" command
-    signal(SIGTERM, lam);
-    //^Z
-    signal(SIGTSTP, lam);
+    radar.register_data_received_callback(received_frame_data);
 
     if (radar.is_connected())
     {
@@ -93,37 +69,12 @@ int main(void)
         fmt->rx_mask = 0x03;
         fmt->eSignalPart = EP_RADAR_BASE_SIGNAL_I_AND_Q;
         radar.set_frame_format(fmt);
-
         radar.set_pga_level(3);
-
         cout << "done!" << endl;
 
         cout << radar.settings.dump(4) << endl;
 
-
-        while (true) {
-            try {
-                while (1) {
-                    // get raw data
-                    cout << "get new data..." << endl;
-                    radar.request_data(10);
-                    std::this_thread::sleep_for(500ms);
-                }
-            } catch (std::runtime_error err) {
-
-                do {
-                    cout << "try reconnecting ..." << endl;
-                    if (radar.connect()) {
-                        cout << "successfully reconnected" << endl;
-                        break;
-                    }
-
-                    cout << "wait for 15s ..." << endl;
-                    this_thread::sleep_for(15s);
-
-                } while (!radar.is_connected());
-            }
-        }
+        radar.start_measurement(1500000);
 
         exit(0);
     }

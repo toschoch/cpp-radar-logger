@@ -135,3 +135,11 @@ void Radar::on_adc_config_received(void *context, int32_t protocol_handle, uint8
 
     radar->store_settings();
 }
+
+void Radar::on_minimal_frame_interval_received(void *context, int32_t protocol_handle, uint8_t endpoint,
+                                               uint32_t min_frame_interval_us) {
+    auto radar = (Radar*) context;
+    radar->settings["data"]["frame interval"]["min"] = min_frame_interval_us;
+
+    radar->store_settings();
+}

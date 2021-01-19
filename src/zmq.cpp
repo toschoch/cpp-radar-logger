@@ -15,6 +15,10 @@ using namespace std;
 ZMQ::ZMQ() : socket(context, zmqpp::socket_type::pub),
              endpoint(string("tcp://*:") + get_env_var("ZMQ_PORT", "5555")) {}
 
+string ZMQ::get_endpoint() const {
+    return endpoint;
+}
+
 void ZMQ::start() {
     cout << "starting zmq server on " << endpoint << "..." << endl;
 
