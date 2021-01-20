@@ -257,7 +257,7 @@ void Radar::stop_automatic_frame_triggering() {
 void Radar::set_frame_interval(int interval_us) {
     stop_automatic_frame_triggering();
 
-    settings["data"]["frame interval"]["current"] = min(interval_us, settings["data"]["frame interval"]["min"].get<int>());
+    settings["data"]["frame interval"]["current"] = max(interval_us, settings["data"]["frame interval"]["min"].get<int>());
     settings["data"]["frame interval"]["unit"] = "us";
     request_minimal_frame_interval();
 

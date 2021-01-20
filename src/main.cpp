@@ -22,7 +22,14 @@ int main(void)
     Radar radar;
     radar.set_reconnection_interval(5);
 
-    MQTTClient mqtt_client;
+    MQTTClient mqtt_client(get_device_name()+"/radar");
+
+    mqtt_client.subscribe("data/frame_interval/current", [](const string& s) {
+        cout << "set measurement interval to " << s << endl;
+    });
+    mqtt_client.subscribe("antennas/tx/power/current",[](const string& s) {
+        cout << "set transmission power to " << s << endl;
+    });
 
     mqtt_client.connect();
 

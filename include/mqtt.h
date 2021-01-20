@@ -8,35 +8,48 @@
 #include <iostream>
 #include <cstdlib>
 #include <string>
+#include <vector>
 #include <tuple>
 #include <mqtt/async_client.h>
 #include <thread>
 #include <chrono>
 #include "../include/utils.h"
 
+using namespace std;
 
 class action_listener : public virtual mqtt::iaction_listener
 {
-    std::string name_;
+    string name_;
 
     void on_failure(const mqtt::token& tok) override;
     void on_success(const mqtt::token& tok) override;
 
 public:
-    action_listener(const std::string& name) : name_(name) {}
+    action_listener(const string& name) : name_(name) {}
 };
 
-class callback : public virtual mqtt::callback,
-                 public virtual mqtt::iaction_listener
-
+class MQTTClient : public virtual mqtt::callback,
+                   public virtual mqtt::iaction_listener
 {
-    // The MQTT client
-    mqtt::async_client& cli_;
-    // Options to use if we need to reconnect
-    mqtt::connect_options& connOpts_;
-    // An action listener to display the result of actions.
-    action_listener subListener_;
+    string const broker;
+    string const client_id;
+    string const topic_prefix;
 
+    int const qos = 1;
+
+    mqtt::async_client cli;
+    mqtt::connect_options connOpts;
+
+    // An action listener to display the result of actions.
+    action_listener subListener;
+
+    shared_ptr<mqtt::string_collection> topics;
+    vector<int> qos_vector;
+    vector<function<void(const string&)>> topic_callbacks;
+
+    static tuple<string, string> get_credentials();
+
+    // CALLABACKS
     // This demonstrates manually reconnecting to the broker by calling
     // connect() again. This is a possibility for an application that keeps
     // a copy of it's original connect_options, or if the app wants to
@@ -53,35 +66,22 @@ class callback : public virtual mqtt::callback,
     void on_success(const mqtt::token& tok) override {}
 
     // (Re)connection success
-    void connected(const std::string& cause) override;
+    void connected(const string& cause) override;
 
     // Callback for when the connection is lost.
     // This will initiate the attempt to manually reconnect.
-    void connection_lost(const std::string& cause) override;
+    void connection_lost(const string& cause) override;
 
     // Callback for when a message arrives.
     void message_arrived(mqtt::const_message_ptr msg) override;
 
     void delivery_complete(mqtt::delivery_token_ptr token) override {}
 
-public:
-    callback(mqtt::async_client& cli, mqtt::connect_options& connOpts)
-            : cli_(cli), connOpts_(connOpts), subListener_("Subscription") {}
-};
-
-class MQTTClient
-{
-    std::string const broker;
-    std::string const client_id;
-
-    mqtt::async_client cli;
-    mqtt::connect_options connOpts;
-    callback cb;
-
-    static std::tuple<std::string, std::string> get_credentials();
 
 public:
-    MQTTClient();
+    MQTTClient(string prefix="");
+
+    void subscribe(string subtopic, const function<void(string)>& callback);
 
     void connect();
     void disconnect();

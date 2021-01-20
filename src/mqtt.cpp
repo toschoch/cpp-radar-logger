@@ -46,16 +46,36 @@
 
 using namespace std;
 
-const string TOPIC("hello");
 
-const int	QOS = 1;
-const int	N_RETRY_ATTEMPTS = 5;
+/////////////////////////////////////////////////////////////////////////////
 
-MQTTClient::MQTTClient() : broker(get_env_var("MQTT_BROKER", "")),
-                           client_id(get_device_name()+"/"+get_service_name()),
-                           cli(broker, client_id), cb(cli, connOpts)
+// Callbacks for the success or failures of requested actions.
+// This could be used to initiate further action, but here we just log the
+// results to the console.
+
+void action_listener::on_failure(const mqtt::token& tok) {
+    cout << name_ << " failure";
+    if (tok.get_message_id() != 0)
+        cout << " for token: [" << tok.get_message_id() << "]" << endl;
+    cout << endl;
+}
+
+void action_listener::on_success(const mqtt::token& tok) {
+    cout << name_ << " success";
+    if (tok.get_message_id() != 0)
+        cout << " for token: [" << tok.get_message_id() << "]" << endl;
+    auto top = tok.get_topics();
+    if (top && !top->empty())
+        cout << "\ttoken topic: '" << (*top)[0] << "', ..." << endl;
+    cout << endl;
+}
+
+MQTTClient::MQTTClient(string prefix) : broker(get_env_var("MQTT_BROKER", "")),
+                                              client_id(get_device_name()+"/"+get_service_name()),
+                                              cli(broker, client_id), subListener("Subscription"),
+                                              topic_prefix(prefix+"/")
 {
-    connOpts.set_clean_session(false);
+    connOpts.set_clean_session(true);
 
     auto creds = get_credentials();
     auto username = get<0>(creds);
@@ -69,14 +89,22 @@ MQTTClient::MQTTClient() : broker(get_env_var("MQTT_BROKER", "")),
         connOpts.set_password(pw);
     }
 
+    topics = make_shared<mqtt::string_collection>(mqtt::string_collection());
+
     // Install the callback(s) before connecting.
-    cli.set_callback(cb);
+    cli.set_callback(*this);
+}
+
+void MQTTClient::subscribe(string subtopic, const function<void(string)>& callback) {
+    topics->push_back(topic_prefix+subtopic);
+    topic_callbacks.push_back(callback);
+    qos_vector.push_back(qos);
 }
 
 void MQTTClient::connect() {
     try {
         cout << "Connecting to the MQTT server..." << flush << endl;
-        cli.connect(connOpts, nullptr, cb);
+        cli.connect(connOpts, nullptr, *this);
     }
     catch (const mqtt::exception& exc) {
         cerr << "\nERROR: Unable to connect to MQTT server: '"
@@ -120,49 +148,10 @@ tuple<string, string> MQTTClient::get_credentials()
     return creds;
 }
 
-/////////////////////////////////////////////////////////////////////////////
-
-// Callbacks for the success or failures of requested actions.
-// This could be used to initiate further action, but here we just log the
-// results to the console.
-
-void action_listener::on_failure(const mqtt::token& tok) {
-    cout << name_ << " failure";
-    if (tok.get_message_id() != 0)
-        cout << " for token: [" << tok.get_message_id() << "]" << endl;
-    cout << endl;
-}
-
-void action_listener::on_success(const mqtt::token& tok) {
-    cout << name_ << " success";
-    if (tok.get_message_id() != 0)
-        cout << " for token: [" << tok.get_message_id() << "]" << endl;
-    auto top = tok.get_topics();
-    if (top && !top->empty())
-        cout << "\ttoken topic: '" << (*top)[0] << "', ..." << endl;
-    cout << endl;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-
-/**
- * Local callback & listener class for use with the client connection.
- * This is primarily intended to receive messages, but it will also monitor
- * the connection to the broker. If the connection is lost, it will attempt
- * to restore the connection and re-subscribe to the topic.
- */
-
-// This demonstrates manually reconnecting to the broker by calling
-// connect() again. This is a possibility for an application that keeps
-// a copy of it's original connect_options, or if the app wants to
-// reconnect with different options.
-// Another way this can be done manually, if using the same options, is
-// to just call the async_client::reconnect() method.
-void callback::reconnect() {
+void MQTTClient::reconnect() {
     this_thread::sleep_for(10s);
     try {
-        cli_.connect(connOpts_, nullptr, *this);
+        cli.connect(connOpts, nullptr, *this);
     }
     catch (const mqtt::exception& exc) {
         cerr << "Error: " << exc.what() << endl;
@@ -171,23 +160,26 @@ void callback::reconnect() {
 }
 
 // Re-connection failure
-void callback::on_failure(const mqtt::token& tok) {
+void MQTTClient::on_failure(const mqtt::token& tok) {
     cout << "Connection attempt failed" << endl;
     reconnect();
 }
 
 
 // (Re)connection success
-void callback::connected(const string& cause) {
+void MQTTClient::connected(const string& cause) {
     cout << "Connection success" << endl;
-    cout << "Subscribing to topic...'" << TOPIC << endl;
+    cout << "Subscribing to topic...'";
+    for (auto i=0; i<topics->size(); ++i)
+        cout << (*topics)[i] << " ";
+    cout << endl;
 
-    cli_.subscribe(TOPIC, QOS, nullptr, subListener_);
+    cli.subscribe(topics, qos_vector, nullptr, subListener);
 }
 
 // Callback for when the connection is lost.
 // This will initiate the attempt to manually reconnect.
-void callback::connection_lost(const string& cause) {
+void MQTTClient::connection_lost(const string& cause) {
     cout << "Connection lost" << endl;
     if (!cause.empty())
         cout << "\tcause: " << cause << endl;
@@ -197,10 +189,11 @@ void callback::connection_lost(const string& cause) {
 }
 
 // Callback for when a message arrives.
-void callback::message_arrived(mqtt::const_message_ptr msg) {
-    cout << "Message arrived" << endl;
-    cout << "\ttopic: '" << msg->get_topic() << "'" << endl;
-    cout << "\tpayload: '" << msg->to_string() << "'\n" << endl;
+void MQTTClient::message_arrived(mqtt::const_message_ptr msg) {
+    for (auto i=0; i<topics->size(); ++i)
+        if ((*topics)[i] == msg->get_topic())
+            topic_callbacks[i](msg->get_payload_str());
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
