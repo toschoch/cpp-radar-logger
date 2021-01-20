@@ -30,8 +30,6 @@ class callback : public virtual mqtt::callback,
                  public virtual mqtt::iaction_listener
 
 {
-    // Counter for the number of connection retries
-    int nretry_;
     // The MQTT client
     mqtt::async_client& cli_;
     // Options to use if we need to reconnect
@@ -39,7 +37,7 @@ class callback : public virtual mqtt::callback,
     // An action listener to display the result of actions.
     action_listener subListener_;
 
-    // This deomonstrates manually reconnecting to the broker by calling
+    // This demonstrates manually reconnecting to the broker by calling
     // connect() again. This is a possibility for an application that keeps
     // a copy of it's original connect_options, or if the app wants to
     // reconnect with different options.
@@ -68,7 +66,7 @@ class callback : public virtual mqtt::callback,
 
 public:
     callback(mqtt::async_client& cli, mqtt::connect_options& connOpts)
-            : nretry_(0), cli_(cli), connOpts_(connOpts), subListener_("Subscription") {}
+            : cli_(cli), connOpts_(connOpts), subListener_("Subscription") {}
 };
 
 class MQTTClient

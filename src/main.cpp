@@ -20,18 +20,15 @@ int main(void)
 {
     ZMQ zmq_server;
     Radar radar;
+    radar.set_reconnection_interval(5);
+
     MQTTClient mqtt_client;
 
     mqtt_client.connect();
 
     cout << "try to find connected radar..." << endl;
-    radar.connect();
-
-    while (!radar.is_connected()) {
-        cout << "could not find radar! wait for 15s..." << endl;
-        std::this_thread::sleep_for(15s);
-        cout << "try to find connected radar..." << endl;
-        radar.connect();
+    if (!radar.connect()) {
+        exit(1);
     }
 
     cout << "success! connecting...";
@@ -79,22 +76,9 @@ int main(void)
     cout << "done!" << endl << endl;
     radar.update_settings();
 
-    // disable automatic trigger
-    radar.stop_measurement();
-
-    cout << "configure...";
-    auto fmt = new Frame_Format_t;
-    fmt->num_chirps_per_frame = 32;
-    fmt->num_samples_per_chirp = 128;
-    fmt->rx_mask = 0x03;
-    fmt->eSignalPart = EP_RADAR_BASE_SIGNAL_I_AND_Q;
-    radar.set_frame_format(fmt);
-    radar.set_pga_level(3);
-    cout << "done!" << endl;
-
     cout << radar.settings.dump(4) << endl;
 
-    radar.start_measurement(1500000);
+    radar.start_measurement();
 
     exit(0);
 }

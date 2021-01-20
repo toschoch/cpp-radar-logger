@@ -43,7 +43,10 @@
 #include <chrono>
 #include <fstream>
 
-const std::string TOPIC("hello");
+
+using namespace std;
+
+const string TOPIC("hello");
 
 const int	QOS = 1;
 const int	N_RETRY_ATTEMPTS = 5;
@@ -55,8 +58,8 @@ MQTTClient::MQTTClient() : broker(get_env_var("MQTT_BROKER", "")),
     connOpts.set_clean_session(false);
 
     auto creds = get_credentials();
-    auto username = std::get<0>(creds);
-    auto pw = std::get<1>(creds);
+    auto username = get<0>(creds);
+    auto pw = get<1>(creds);
 
     if (username.length() > 0 ) {
         connOpts.set_user_name(username);
@@ -72,32 +75,32 @@ MQTTClient::MQTTClient() : broker(get_env_var("MQTT_BROKER", "")),
 
 void MQTTClient::connect() {
     try {
-        std::cout << "Connecting to the MQTT server..." << std::flush << std::endl;
+        cout << "Connecting to the MQTT server..." << flush << endl;
         cli.connect(connOpts, nullptr, cb);
     }
     catch (const mqtt::exception& exc) {
-        std::cerr << "\nERROR: Unable to connect to MQTT server: '"
-                  << broker << "'" << exc << std::endl;
+        cerr << "\nERROR: Unable to connect to MQTT server: '"
+                  << broker << "'" << exc << endl;
     }
 }
 
 void MQTTClient::disconnect() {
 
     try {
-        std::cout << "\nDisconnecting from the MQTT server..." << std::flush;
+        cout << "\nDisconnecting from the MQTT server..." << flush;
         cli.disconnect()->wait();
-        std::cout << "OK" << std::endl;
+        cout << "OK" << endl;
     }
     catch (const mqtt::exception& exc) {
-        std::cerr << exc << std::endl;
+        cerr << exc << endl;
     }
 }
 
-std::tuple<std::string, std::string> MQTTClient::get_credentials()
+tuple<string, string> MQTTClient::get_credentials()
 {
     auto credentials = get_env_var("MQTT_CREDENTIALS","");
 
-    std::ifstream input(credentials);
+    ifstream input(credentials);
     if (input.good()) {
         credentials.clear();
         getline(input, credentials);
@@ -105,15 +108,15 @@ std::tuple<std::string, std::string> MQTTClient::get_credentials()
 
     auto idx = credentials.find(":");
 
-    std::string username;
-    std::string pw;
+    string username;
+    string pw;
 
     if (idx != credentials.npos) {
         username = credentials.substr(0, idx);
         pw = credentials.substr(idx+1, credentials.length());
     }
 
-    auto creds(std::make_tuple(username, pw));
+    auto creds(make_tuple(username, pw));
     return creds;
 }
 
@@ -124,20 +127,20 @@ std::tuple<std::string, std::string> MQTTClient::get_credentials()
 // results to the console.
 
 void action_listener::on_failure(const mqtt::token& tok) {
-    std::cout << name_ << " failure";
+    cout << name_ << " failure";
     if (tok.get_message_id() != 0)
-        std::cout << " for token: [" << tok.get_message_id() << "]" << std::endl;
-    std::cout << std::endl;
+        cout << " for token: [" << tok.get_message_id() << "]" << endl;
+    cout << endl;
 }
 
 void action_listener::on_success(const mqtt::token& tok) {
-    std::cout << name_ << " success";
+    cout << name_ << " success";
     if (tok.get_message_id() != 0)
-        std::cout << " for token: [" << tok.get_message_id() << "]" << std::endl;
+        cout << " for token: [" << tok.get_message_id() << "]" << endl;
     auto top = tok.get_topics();
     if (top && !top->empty())
-        std::cout << "\ttoken topic: '" << (*top)[0] << "', ..." << std::endl;
-    std::cout << std::endl;
+        cout << "\ttoken topic: '" << (*top)[0] << "', ..." << endl;
+    cout << endl;
 }
 
 
@@ -157,52 +160,47 @@ void action_listener::on_success(const mqtt::token& tok) {
 // Another way this can be done manually, if using the same options, is
 // to just call the async_client::reconnect() method.
 void callback::reconnect() {
-    std::this_thread::sleep_for(std::chrono::milliseconds(2500));
+    this_thread::sleep_for(10s);
     try {
         cli_.connect(connOpts_, nullptr, *this);
     }
     catch (const mqtt::exception& exc) {
-        std::cerr << "Error: " << exc.what() << std::endl;
+        cerr << "Error: " << exc.what() << endl;
         exit(1);
     }
 }
 
 // Re-connection failure
 void callback::on_failure(const mqtt::token& tok) {
-    std::cout << "Connection attempt failed" << std::endl;
-    if (++nretry_ > N_RETRY_ATTEMPTS)
-        exit(1);
+    cout << "Connection attempt failed" << endl;
     reconnect();
 }
 
 
 // (Re)connection success
-void callback::connected(const std::string& cause) {
-    std::cout << "\nConnection success" << std::endl;
-    std::cout << "\nSubscribing to topic '" << TOPIC << "'\n"
-              << " using QoS" << QOS << "\n"
-              << "\nPress Q<Enter> to quit\n" << std::endl;
+void callback::connected(const string& cause) {
+    cout << "Connection success" << endl;
+    cout << "Subscribing to topic...'" << TOPIC << endl;
 
     cli_.subscribe(TOPIC, QOS, nullptr, subListener_);
 }
 
 // Callback for when the connection is lost.
 // This will initiate the attempt to manually reconnect.
-void callback::connection_lost(const std::string& cause) {
-    std::cout << "\nConnection lost" << std::endl;
+void callback::connection_lost(const string& cause) {
+    cout << "Connection lost" << endl;
     if (!cause.empty())
-        std::cout << "\tcause: " << cause << std::endl;
+        cout << "\tcause: " << cause << endl;
 
-    std::cout << "Reconnecting..." << std::endl;
-    nretry_ = 0;
+    cout << "Reconnecting..." << endl;
     reconnect();
 }
 
 // Callback for when a message arrives.
 void callback::message_arrived(mqtt::const_message_ptr msg) {
-    std::cout << "Message arrived" << std::endl;
-    std::cout << "\ttopic: '" << msg->get_topic() << "'" << std::endl;
-    std::cout << "\tpayload: '" << msg->to_string() << "'\n" << std::endl;
+    cout << "Message arrived" << endl;
+    cout << "\ttopic: '" << msg->get_topic() << "'" << endl;
+    cout << "\tpayload: '" << msg->to_string() << "'\n" << endl;
 }
 
 /////////////////////////////////////////////////////////////////////////////

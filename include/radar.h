@@ -5,6 +5,8 @@
 #ifndef RADARREADER_RADAR_H
 #define RADARREADER_RADAR_H
 
+#include <chrono>
+#include <memory>
 #include <exception>
 #include <nlohmann/json.hpp>
 #include "EndpointRadarBase.h"
@@ -12,11 +14,16 @@
 #include <EndpointRadarAdcxmc.h>
 
 using json = nlohmann::json;
+using namespace std;
 
 class Radar {
 
-    std::string settings_file;
-    int reconnection_interval_s = 0;
+    const chrono::microseconds send_settings_wait_time;
+
+    string settings_file;
+    float reconnection_interval_s = 0;
+    bool frame_triggering_activated = false;
+    bool measurement_started = false;
 
     int protocolHandle = -1;
     int endpointBaseRadar = -1;
@@ -25,23 +32,31 @@ class Radar {
     int endpointP2GRadar = -1;
 
     // radar enums
-    const std::map<Signal_Part_t, std::string> signal_part_names =
+    const map<Signal_Part_t, string> signal_part_names =
             {{Signal_Part_t::EP_RADAR_BASE_SIGNAL_I_AND_Q, "I/Q"},
              {Signal_Part_t ::EP_RADAR_BASE_SIGNAL_ONLY_I, "I"},
              {Signal_Part_t ::EP_RADAR_BASE_SIGNAL_ONLY_Q, "Q"}};
 
-    const std::map<Rx_Data_Format_t, std::string> data_format_names =
+    const map<Rx_Data_Format_t, string> data_format_names =
             {{Rx_Data_Format_t::EP_RADAR_BASE_RX_DATA_COMPLEX, "Complex"},
              {Rx_Data_Format_t ::EP_RADAR_BASE_RX_DATA_COMPLEX_INTERLEAVED, "Complex interleaved"},
              {Rx_Data_Format_t ::EP_RADAR_BASE_RX_DATA_REAL, "Real"}};
 
-    const std::map<Chirp_Direction_t, std::string> chirp_direction_names =
+    const map<Chirp_Direction_t, string> chirp_direction_names =
             {{Chirp_Direction_t::EP_RADAR_FMCW_DIR_UPCHIRP_ONLY, "up"},
              {Chirp_Direction_t::EP_RADAR_FMCW_DIR_DOWNCHIRP_ONLY, "down"},
              {Chirp_Direction_t::EP_RADAR_FMCW_DIR_ALTERNATING_FIRST_UP, "alternating first up"},
              {Chirp_Direction_t::EP_RADAR_FMCW_DIR_ALTERNATING_FIRST_DOWN, "alternating first down"}};
 
+    void start_automatic_frame_triggering();
+    void stop_automatic_frame_triggering();
     void send_settings_to_radar();
+
+
+    // settings getters
+    unique_ptr<Frame_Format_t> get_settings_frame_format();
+    unique_ptr<Fmcw_Configuration_t> get_settings_fmcw_configuration();
+    unique_ptr<Adc_Xmc_Configuration_t> get_settings_adc_configuration();
 
 public:
 
@@ -50,7 +65,7 @@ public:
 
     // should be protected, but because of c callbacks
     json settings;
-    std::function<void(const Frame_Info_t*)> data_callback;
+    function<void(const Frame_Info_t*)> data_callback;
 
     void store_settings();
     void restore_settings();
@@ -63,19 +78,20 @@ public:
 
     void identify_available_apis();
 
-    void register_data_received_callback(const std::function<void(const Frame_Info_t*)>& callback);
+    void register_data_received_callback(const function<void(const Frame_Info_t*)>& callback);
     void register_settings_callbacks();
 
     void start_measurement();
-    void stop_measurement() const;
+    void stop_measurement();
+
 
     // setters
     void set_frame_interval(int interval_us);
     void set_reconnection_interval(int interval_s);
-    void set_frame_format(const Frame_Format_t* fmt) const;
-    void set_fmcw_configuration(const Fmcw_Configuration_t* config) const;
-    void set_pga_level(uint16_t ppa_level) const;
-    void set_adc_configuration(const Adc_Xmc_Configuration_t* config) const;
+    void set_frame_format(const Frame_Format_t *fmt);
+    void set_fmcw_configuration(const Fmcw_Configuration_t *config);
+    void set_pga_level(uint16_t ppa_level);
+    void set_adc_configuration(const Adc_Xmc_Configuration_t *config);
 
     // requests
     void request_data(uint8_t wait) const;
@@ -107,8 +123,8 @@ public:
 int radar_auto_connect(void);
 
 
-struct RadarConnectionLost : public virtual std::runtime_error {
-    using std::runtime_error::runtime_error ;
+struct RadarConnectionLost : public virtual runtime_error {
+    using runtime_error::runtime_error ;
 };
 
 
