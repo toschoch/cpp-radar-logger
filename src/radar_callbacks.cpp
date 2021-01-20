@@ -140,6 +140,7 @@ void Radar::on_minimal_frame_interval_received(void *context, int32_t protocol_h
                                                uint32_t min_frame_interval_us) {
     auto radar = (Radar*) context;
     radar->settings["data"]["frame interval"]["min"] = min_frame_interval_us;
+    radar->settings["data"]["frame interval"]["current"] = min(min_frame_interval_us, radar->settings["data"]["frame interval"]["current"]);
 
     radar->store_settings();
 }

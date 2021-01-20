@@ -183,10 +183,9 @@ void Radar::handle_error_codes(int32_t error_code) {
     }
 }
 
-void Radar::start_measurement(int interval_us, int reconnection_interval_s) {
+void Radar::start_measurement() {
 
     cout << "start measurement trigger, request and reconnection loop..." << endl;
-    settings["data"]["frame interval"]["current"] = interval_us;
     settings["data"]["frame interval"]["unit"] = "us";
     store_settings();
 
@@ -225,18 +224,40 @@ void Radar::stop_measurement() const {
                                               0);
 }
 
+void Radar::set_frame_interval(int interval_us) {
+    settings["data"]["frame interval"]["current"] = interval_us;
+}
+
+void Radar::set
+
 void Radar::set_frame_format(const Frame_Format_t *fmt) const {
     ep_radar_base_set_frame_format(protocolHandle, endpointBaseRadar, fmt);
+
+    // read back for updates
+    request_frame_format();
+    request_minimal_frame_interval();
 }
 
 void Radar::set_fmcw_configuration(const Fmcw_Configuration_t *config) const {
     ep_radar_fmcw_set_fmcw_configuration(protocolHandle, endpointFmcwRadar, config);
+
+    // read back for updates
+    request_fmcw_configuration();
+    request_minimal_frame_interval();
 }
+
 
 void Radar::set_pga_level(uint16_t ppa_level) const {
     ep_radar_p2g_set_pga_level(protocolHandle, endpointP2GRadar, ppa_level);
+
+    // read back for updates
+    request_adc_gain_level();
 }
 
 void Radar::set_adc_configuration(const Adc_Xmc_Configuration_t* config) const {
     ep_radar_adcxmc_set_adc_configuration(protocolHandle, endpointAdcRadar, config);
+
+    // read back for updates
+    request_adc_configuration();
+    request_minimal_frame_interval();
 }

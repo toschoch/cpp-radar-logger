@@ -15,4 +15,7 @@ std::string get_env_var( std::string const & key, std::string const & default_va
 
 std::vector<float> generate_data(size_t size);
 
+std::string get_service_name();
+std::string get_device_name();
+
 #endif //RADARREADER_UTILS_H

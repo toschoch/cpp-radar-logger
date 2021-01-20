@@ -3,7 +3,6 @@
 //
 
 
-#include <map>
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -21,6 +20,14 @@ std::string get_env_var( std::string const & key, std::string const & default_va
 {
     char * val = getenv( key.c_str() );
     return val == nullptr ? default_value : std::string(val);
+}
+
+std::string get_service_name() {
+    return "radar-reader";
+}
+
+std::string get_device_name() {
+    return get_env_var("BALENA_DEVICE_NAME_AT_INIT","TestDevice");
 }
 
 std::vector<float> generate_data(size_t size)

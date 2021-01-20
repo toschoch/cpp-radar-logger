@@ -16,6 +16,7 @@ using json = nlohmann::json;
 class Radar {
 
     std::string settings_file;
+    int reconnection_interval_s = 0;
 
     int protocolHandle = -1;
     int endpointBaseRadar = -1;
@@ -46,8 +47,9 @@ public:
 
     Radar();
     ~Radar();
-    json settings;
 
+    // should be protected, but because of c callbacks
+    json settings;
     std::function<void(const Frame_Info_t*)> data_callback;
 
     void store_settings();
@@ -64,10 +66,12 @@ public:
     void register_data_received_callback(const std::function<void(const Frame_Info_t*)>& callback);
     void register_settings_callbacks();
 
-    void start_measurement(int interval_us, int reconnection_interval_s = 15);
+    void start_measurement();
     void stop_measurement() const;
 
     // setters
+    void set_frame_interval(int interval_us);
+    void set_reconnection_interval(int interval_s);
     void set_frame_format(const Frame_Format_t* fmt) const;
     void set_fmcw_configuration(const Fmcw_Configuration_t* config) const;
     void set_pga_level(uint16_t ppa_level) const;

@@ -7,6 +7,7 @@
 #include "../include/utils.h"
 #include "../include/arrow.h"
 #include "../include/zmq.h"
+#include "../include/mqtt.h"
 #include <cstdlib>
 #include <chrono>
 #include <exception>
@@ -15,12 +16,13 @@ using namespace std;
 using namespace std::chrono_literals;
 
 #define AUTOMATIC_DATA_TRIGGER_TIME_US (30000)	// get ADC data each 1ms in automatic trigger mode
-
-
 int main(void)
 {
-    auto zmq_server = ZMQ();
-    auto radar = Radar();
+    ZMQ zmq_server;
+    Radar radar;
+    MQTTClient mqtt_client;
+
+    mqtt_client.connect();
 
     cout << "try to find connected radar..." << endl;
     radar.connect();
