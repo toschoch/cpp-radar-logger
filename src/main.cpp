@@ -97,7 +97,7 @@ int main(void)
 
     cout << radar.settings.dump(4) << endl;
 
-    radar.start_measurement();
+    radar.start_measurement_loop();
 
     exit(0);
 }

@@ -15,7 +15,7 @@ find_package(PahoMqttCpp REQUIRED)
 
 FILE(GLOB CppSources src/*.cpp)
 
-add_executable(${PROJECT_NAME} ${CppSources})
+add_executable(${PROJECT_NAME} ${CppSources} include/shared_queue.h)
 target_link_libraries(${PROJECT_NAME} PRIVATE radarapi -lzmqpp -lzmq arrow_static Threads::Threads paho-mqttpp3 paho-mqtt3a)
 #target_link_libraries(${PROJECT_NAME} PUBLIC
         #opencv_core opencv_hdf)

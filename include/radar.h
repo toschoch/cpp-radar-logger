@@ -6,12 +6,15 @@
 #define RADARREADER_RADAR_H
 
 #include <chrono>
+#include <atomic>
 #include <memory>
 #include <exception>
 #include <nlohmann/json.hpp>
 #include "EndpointRadarBase.h"
 #include <EndpointRadarFmcw.h>
 #include <EndpointRadarAdcxmc.h>
+
+#include "../include/shared_queue.h"
 
 using json = nlohmann::json;
 using namespace std;
@@ -22,8 +25,11 @@ class Radar {
 
     string settings_file;
     float reconnection_interval_s = 0;
-    bool frame_triggering_activated = false;
-    bool measurement_started = false;
+
+    // thread safety
+    atomic<bool> frame_triggering_activated;
+    atomic<bool> main_loop;
+    SharedQueue<function<void(void)>> queue;
 
     int protocolHandle = -1;
     int endpointBaseRadar = -1;
@@ -52,6 +58,8 @@ class Radar {
     void stop_automatic_frame_triggering();
     void send_settings_to_radar();
 
+    void unsafe_set_pga_level(uint16_t ppa_level);
+
 public:
 
     Radar();
@@ -75,21 +83,23 @@ public:
     void register_data_received_callback(const function<void(const Frame_Info_t*)>& callback);
     void register_settings_callbacks();
 
-    void start_measurement();
+    void start_measurement_loop();
     void stop_measurement();
+
 
     // settings getters
     unique_ptr<Frame_Format_t> get_settings_frame_format();
     unique_ptr<Fmcw_Configuration_t> get_settings_fmcw_configuration();
     unique_ptr<Adc_Xmc_Configuration_t> get_settings_adc_configuration();
 
-    // setters
+    // setters (thread safe)
     void set_frame_interval(int interval_us);
     void set_reconnection_interval(int interval_s);
     void set_frame_format(const Frame_Format_t *fmt);
     void set_fmcw_configuration(const Fmcw_Configuration_t *config);
     void set_pga_level(uint16_t ppa_level);
     void set_adc_configuration(const Adc_Xmc_Configuration_t *config);
+
 
     // requests
     void request_data(uint8_t wait) const;

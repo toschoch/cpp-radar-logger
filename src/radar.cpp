@@ -9,6 +9,7 @@
 #include <chrono>
 #include "../include/utils.h"
 #include "../include/radar.h"
+#include "../include/shared_queue.h"
 
 #include "Protocol.h"
 #include "EndpointRadarBase.h"
@@ -19,7 +20,8 @@
 using namespace std;
 
 Radar::Radar() : settings_file(get_env_var("RADAR_SETTINGS", "radar/settings.json")),
-                 send_settings_wait_time(100) {
+                 send_settings_wait_time(100), main_loop(false), frame_triggering_activated(false)
+{
     cout << "use radar settings file: " << settings_file << endl;
     restore_settings();
 }
@@ -205,23 +207,29 @@ void Radar::handle_error_codes(int32_t error_code) {
     }
 }
 
-void Radar::start_measurement() {
+void Radar::start_measurement_loop() {
 
     auto interval_us = settings["data"]["frame interval"]["current"].get<int>();
     cout << "start measurement with interval " << interval_us << "us ..." << endl;
     store_settings();
 
-    measurement_started = true;
 
     do {
         start_automatic_frame_triggering();
         try {
+            main_loop = true;
             while (true) {
                 request_data(true);
-                this_thread::sleep_for(5ms);
+
+                // do the posted settings task
+                while (!queue.empty()) {
+                    queue.front()();
+                    queue.pop_front();
+                }
             }
         } catch (const RadarConnectionLost &err) {
             cout << "Warning: Lost connection to radar!" << endl;
+            main_loop = false;
 
             if (reconnection_interval_s>=0) {
                 cout << "try reconnecting ..." << endl;
@@ -234,7 +242,7 @@ void Radar::start_measurement() {
 }
 
 void Radar::stop_measurement() {
-    measurement_started = false;
+    main_loop = false;
 }
 
 void Radar::start_automatic_frame_triggering() {
@@ -261,7 +269,7 @@ void Radar::set_frame_interval(int interval_us) {
     settings["data"]["frame interval"]["unit"] = "us";
     request_minimal_frame_interval();
 
-    if (measurement_started) {
+    if (main_loop) {
         this_thread::sleep_for(send_settings_wait_time);
         start_automatic_frame_triggering();
     }
@@ -280,7 +288,7 @@ void Radar::set_frame_format(const Frame_Format_t *fmt) {
     request_frame_format();
     request_minimal_frame_interval();
 
-    if (measurement_started) {
+    if (main_loop) {
         this_thread::sleep_for(send_settings_wait_time);
         start_automatic_frame_triggering();
     }
@@ -294,25 +302,30 @@ void Radar::set_fmcw_configuration(const Fmcw_Configuration_t *config) {
     request_fmcw_configuration();
     request_minimal_frame_interval();
 
-    if (measurement_started) {
+    if (main_loop) {
         this_thread::sleep_for(send_settings_wait_time);
         start_automatic_frame_triggering();
     }
 }
 
 
-void Radar::set_pga_level(uint16_t ppa_level) {
-    stop_automatic_frame_triggering();
+void Radar::unsafe_set_pga_level(uint16_t ppa_level) {
     ep_radar_p2g_set_pga_level(protocolHandle, endpointP2GRadar, ppa_level);
-
     // read back for updates
     request_adc_gain_level();
 
-    if (measurement_started) {
-        this_thread::sleep_for(send_settings_wait_time);
-        start_automatic_frame_triggering();
+    this_thread::sleep_for(send_settings_wait_time);
+}
+
+void Radar::set_pga_level(uint16_t ppa_level)
+{
+    if (!main_loop)
+        unsafe_set_pga_level(ppa_level);
+    else {
+        queue.push_back([&]() {unsafe_set_pga_level(ppa_level);});
     }
 }
+
 
 void Radar::set_adc_configuration(const Adc_Xmc_Configuration_t *config) {
     stop_automatic_frame_triggering();
@@ -322,7 +335,7 @@ void Radar::set_adc_configuration(const Adc_Xmc_Configuration_t *config) {
     request_adc_configuration();
     request_minimal_frame_interval();
 
-    if (measurement_started) {
+    if (main_loop) {
         this_thread::sleep_for(send_settings_wait_time);
         start_automatic_frame_triggering();
     }
