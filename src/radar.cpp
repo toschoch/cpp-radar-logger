@@ -207,7 +207,8 @@ void Radar::handle_error_codes(int32_t error_code) {
 
 void Radar::start_measurement() {
 
-    cout << "start measurement trigger, request and reconnection loop..." << endl;
+    auto interval_us = settings["data"]["frame interval"]["current"].get<int>();
+    cout << "start measurement with interval " << interval_us << "us ..." << endl;
     store_settings();
 
     measurement_started = true;
@@ -226,7 +227,6 @@ void Radar::start_measurement() {
                 cout << "try reconnecting ..." << endl;
                 if (connect()) {
                     cout << "successfully reconnected" << endl;
-                    break;
                 }
             }
         }

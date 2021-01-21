@@ -52,12 +52,6 @@ class Radar {
     void stop_automatic_frame_triggering();
     void send_settings_to_radar();
 
-
-    // settings getters
-    unique_ptr<Frame_Format_t> get_settings_frame_format();
-    unique_ptr<Fmcw_Configuration_t> get_settings_fmcw_configuration();
-    unique_ptr<Adc_Xmc_Configuration_t> get_settings_adc_configuration();
-
 public:
 
     Radar();
@@ -84,6 +78,10 @@ public:
     void start_measurement();
     void stop_measurement();
 
+    // settings getters
+    unique_ptr<Frame_Format_t> get_settings_frame_format();
+    unique_ptr<Fmcw_Configuration_t> get_settings_fmcw_configuration();
+    unique_ptr<Adc_Xmc_Configuration_t> get_settings_adc_configuration();
 
     // setters
     void set_frame_interval(int interval_us);

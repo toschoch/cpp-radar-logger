@@ -22,21 +22,33 @@ int main(void)
     Radar radar;
     radar.set_reconnection_interval(5);
 
-    MQTTClient mqtt_client(get_device_name()+"/radar");
-
-    mqtt_client.subscribe("data/frame_interval/current", [](const string& s) {
-        cout << "set measurement interval to " << s << endl;
-    });
-    mqtt_client.subscribe("antennas/tx/power/current",[](const string& s) {
-        cout << "set transmission power to " << s << endl;
-    });
-
-    mqtt_client.connect();
-
     cout << "try to find connected radar..." << endl;
     if (!radar.connect()) {
         exit(1);
     }
+
+    MQTTClient mqtt_client(get_device_name()+"/radar");
+
+    mqtt_client.subscribe("data/frame_interval/current", [&radar](const string& s) {
+        auto interval_us = stoi(s);
+        cout << "set measurement interval to " << interval_us << "us" << endl;
+        radar.settings["data"]["frame interval"]["current"] = interval_us;
+        radar.store_settings();
+        //radar.set_frame_interval(stoi(s));
+    });
+    mqtt_client.subscribe("antennas/tx/power/current",[&radar](const string& s) {
+        auto tx_power = stoi(s);
+        cout << "set transmission power to " << tx_power << endl;
+        radar.settings["antennas"]["tx"]["power"]["current"] = tx_power;
+        radar.store_settings();
+        exit(0);
+        /*auto fmcw = radar.get_settings_fmcw_configuration();
+        fmcw->tx_power = tx_power;
+        radar.set_fmcw_configuration(fmcw.get());*/
+    });
+
+    mqtt_client.connect();
+
 
     cout << "success! connecting...";
 
