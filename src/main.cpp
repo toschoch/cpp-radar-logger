@@ -42,7 +42,7 @@ int main(void)
         // radar.settings["antennas"]["tx"]["power"]["current"] = tx_power;
         auto fmcw = radar.get_settings_fmcw_configuration();
         fmcw->tx_power = tx_power;
-        radar.set_fmcw_configuration(fmcw.get());
+        radar.set_fmcw_configuration(fmcw);
     });
     mqtt_client.subscribe("sampling/programmable_gain_level/current",[&radar](const string& s) {
         auto pga = stoi(s);
@@ -61,7 +61,7 @@ int main(void)
     auto received_frame_data = [&zmq_server](const Frame_Info_t* frame_info)
     {
         auto t = std::chrono::system_clock::now();
-        if (frame_info->frame_number % 50 == 0)
+        if (frame_info->frame_number % 5 == 0)
             cout << "frame " << frame_info->frame_number << endl;
 /*
         for (int ant=0; ant<frame_info->num_rx_antennas; ant++)

@@ -67,7 +67,7 @@ void Radar::restore_settings() {
     }
 }
 
-unique_ptr<Frame_Format_t> Radar::get_settings_frame_format() {
+shared_ptr<Frame_Format_t> Radar::get_settings_frame_format() {
     auto fmt = unique_ptr<Frame_Format_t>{new Frame_Format_t};
     fmt->num_chirps_per_frame = settings["data"]["chirps per frame"].get<int>();
     fmt->num_samples_per_chirp = settings["data"]["samples per chrip"].get<int>();
@@ -88,9 +88,9 @@ unique_ptr<Frame_Format_t> Radar::get_settings_frame_format() {
     return fmt;
 }
 
-unique_ptr<Fmcw_Configuration_t> Radar::get_settings_fmcw_configuration() {
+shared_ptr<Fmcw_Configuration_t> Radar::get_settings_fmcw_configuration() {
 
-    auto fmcw = unique_ptr<Fmcw_Configuration_t>{new Fmcw_Configuration_t};
+    auto fmcw = shared_ptr<Fmcw_Configuration_t>{new Fmcw_Configuration_t};
     fmcw->tx_power = settings["antennas"]["tx"]["power"]["current"].get<int>();
     fmcw->upper_frequency_kHz = settings["frequency"]["high"].get<int>();
     fmcw->lower_frequency_kHz = settings["frequency"]["low"].get<int>();
@@ -110,7 +110,7 @@ void Radar::send_settings_to_radar() {
     set_frame_format(fmt.get());
 
     auto fmcw = get_settings_fmcw_configuration();
-    set_fmcw_configuration(fmcw.get());
+    set_fmcw_configuration(fmcw);
 
     set_pga_level(settings["sampling"]["programmable gain level"].get<int>());
 }
@@ -224,9 +224,15 @@ void Radar::start_measurement_loop() {
                 request_data(true);
 
                 // do the posted settings task
-                while (!queue.empty()) {
-                    queue.front()();
-                    queue.pop_front();
+                if (!queue.empty()) {
+                    stop_automatic_frame_triggering();
+                    while (!queue.empty()) {
+                        cout << "send settings task..." << endl;
+                        queue.front()();
+                        queue.pop_front();
+                        this_thread::sleep_for(send_settings_wait_time);
+                    }
+                    start_automatic_frame_triggering();
                 }
 
                 this_thread::sleep_for(1ms);
@@ -273,17 +279,11 @@ void Radar::set_reconnection_interval(int interval_s) {
 }
 
 void Radar::unsafe_set_frame_interval(int interval_us) {
-    stop_automatic_frame_triggering();
 
     settings["data"]["frame interval"]["current"] = max(interval_us, settings["data"]["frame interval"]["min"].get<int>());
     settings["data"]["frame interval"]["unit"] = "us";
     request_minimal_frame_interval();
 
-    this_thread::sleep_for(send_settings_wait_time);
-
-    // if main loop is supposed to run restart automatic frame triggering
-    if (main_loop.load())
-        start_automatic_frame_triggering();
 }
 
 void Radar::set_frame_interval(int interval_us) {
@@ -311,19 +311,19 @@ void Radar::set_frame_format(const Frame_Format_t *fmt) {
     }
 }
 
-void Radar::unsafe_set_fmcw_configuration(const Fmcw_Configuration_t *config) {
-    ep_radar_fmcw_set_fmcw_configuration(protocolHandle, endpointFmcwRadar, config);
+void Radar::unsafe_set_fmcw_configuration(shared_ptr<Fmcw_Configuration_t> config) {
+    ep_radar_fmcw_set_fmcw_configuration(protocolHandle, endpointFmcwRadar, config.get());
 
     // read back for updates
     request_fmcw_configuration();
     request_minimal_frame_interval();
 }
 
-void Radar::set_fmcw_configuration(const Fmcw_Configuration_t *config) {
+void Radar::set_fmcw_configuration(shared_ptr<Fmcw_Configuration_t> config) {
     if (!main_loop.load())
         unsafe_set_fmcw_configuration(config);
     else {
-        queue.push_back([&]() {unsafe_set_fmcw_configuration(config);});
+        queue.push_back([&, config]() {unsafe_set_fmcw_configuration(config);});
     }
 }
 
