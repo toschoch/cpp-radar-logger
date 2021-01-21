@@ -21,7 +21,8 @@
 using namespace std;
 
 Radar::Radar() : settings_file(get_env_var("RADAR_SETTINGS", "radar/settings.json")),
-                 send_settings_wait_time(100), main_loop(false), frame_triggering_activated(false)
+                 send_settings_wait_time(100), main_loop(false), frame_triggering_activated(false),
+                 reconnection_interval_s(0)
 {
     cout << "use radar settings file: " << settings_file << endl;
     restore_settings();
@@ -35,9 +36,9 @@ bool Radar::connect() {
     protocolHandle = radar_auto_connect();
     bool found = is_connected();
 
-    while (!found && reconnection_interval_s > 0) {
-        cout << "could not find radar! try again in " << reconnection_interval_s << "s..." << endl;
-        std::this_thread::sleep_for(reconnection_interval_s*1s);
+    while (!found && reconnection_interval_s.load() > 0) {
+        cout << "could not find radar! try again in " << reconnection_interval_s.load() << "s..." << endl;
+        std::this_thread::sleep_for(reconnection_interval_s.load()*1s);
         protocolHandle = radar_auto_connect();
         found = is_connected();
     }
@@ -236,14 +237,14 @@ void Radar::start_measurement_loop() {
             cout << "Warning: Lost connection to radar!" << endl;
             main_loop = false;
 
-            if (reconnection_interval_s>=0) {
+            if (reconnection_interval_s.load()>=0) {
                 cout << "try reconnecting ..." << endl;
                 if (connect()) {
                     cout << "successfully reconnected" << endl;
                 }
             }
         }
-    } while (reconnection_interval_s>=0);
+    } while (reconnection_interval_s.load()>=0);
 }
 
 void Radar::stop_measurement() {
@@ -267,35 +268,46 @@ void Radar::stop_automatic_frame_triggering() {
     frame_triggering_activated = false;
 }
 
-void Radar::set_frame_interval(int interval_us) {
+void Radar::set_reconnection_interval(int interval_s) {
+    reconnection_interval_s = interval_s;
+}
+
+void Radar::unsafe_set_frame_interval(int interval_us) {
     stop_automatic_frame_triggering();
 
     settings["data"]["frame interval"]["current"] = max(interval_us, settings["data"]["frame interval"]["min"].get<int>());
     settings["data"]["frame interval"]["unit"] = "us";
     request_minimal_frame_interval();
 
-    if (main_loop) {
-        this_thread::sleep_for(send_settings_wait_time);
+    this_thread::sleep_for(send_settings_wait_time);
+
+    // if main loop is supposed to run restart automatic frame triggering
+    if (main_loop.load())
         start_automatic_frame_triggering();
+}
+
+void Radar::set_frame_interval(int interval_us) {
+    if (!main_loop.load())
+        unsafe_set_frame_interval(interval_us);
+    else {
+        queue.push_back([&]() {unsafe_set_frame_interval(interval_us);});
     }
 }
 
-void Radar::set_reconnection_interval(int interval_s) {
-    reconnection_interval_s = interval_s;
-}
 
-void Radar::set_frame_format(const Frame_Format_t *fmt) {
-    stop_automatic_frame_triggering();
-
+void Radar::unsafe_set_frame_format(const Frame_Format_t *fmt) {
     ep_radar_base_set_frame_format(protocolHandle, endpointBaseRadar, fmt);
 
     // read back for updates
     request_frame_format();
     request_minimal_frame_interval();
+}
 
-    if (main_loop) {
-        this_thread::sleep_for(send_settings_wait_time);
-        start_automatic_frame_triggering();
+void Radar::set_frame_format(const Frame_Format_t *fmt) {
+    if (!main_loop.load())
+        unsafe_set_frame_format(fmt);
+    else {
+        queue.push_back([&]() {unsafe_set_frame_format(fmt);});
     }
 }
 

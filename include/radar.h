@@ -24,7 +24,7 @@ class Radar {
     const chrono::microseconds send_settings_wait_time;
 
     string settings_file;
-    float reconnection_interval_s = 0;
+    atomic<float> reconnection_interval_s;
 
     // thread safety
     atomic<bool> frame_triggering_activated;
@@ -41,6 +41,7 @@ class Radar {
     void stop_automatic_frame_triggering();
     void send_settings_to_radar();
 
+    void unsafe_set_frame_interval(int interval_us);
     void unsafe_set_pga_level(uint16_t ppa_level);
     void unsafe_set_frame_format(const Frame_Format_t *fmt);
     void unsafe_set_fmcw_configuration(const Fmcw_Configuration_t *config);

@@ -32,19 +32,22 @@ int main(void)
     mqtt_client.subscribe("data/frame_interval/current", [&radar](const string& s) {
         auto interval_us = stoi(s);
         cout << "set measurement interval to " << interval_us << "us" << endl;
-        radar.settings["data"]["frame interval"]["current"] = interval_us;
-        radar.store_settings();
-        //radar.set_frame_interval(stoi(s));
+        // radar.settings["data"]["frame interval"]["current"] = interval_us;
+        // radar.store_settings();
+        radar.set_frame_interval(interval_us);
     });
     mqtt_client.subscribe("antennas/tx/power/current",[&radar](const string& s) {
         auto tx_power = stoi(s);
         cout << "set transmission power to " << tx_power << endl;
-        radar.settings["antennas"]["tx"]["power"]["current"] = tx_power;
-        radar.store_settings();
-        exit(0);
-        /*auto fmcw = radar.get_settings_fmcw_configuration();
+        // radar.settings["antennas"]["tx"]["power"]["current"] = tx_power;
+        auto fmcw = radar.get_settings_fmcw_configuration();
         fmcw->tx_power = tx_power;
-        radar.set_fmcw_configuration(fmcw.get());*/
+        radar.set_fmcw_configuration(fmcw.get());
+    });
+    mqtt_client.subscribe("sampling/programmable_gain_level/current",[&radar](const string& s) {
+        auto pga = stoi(s);
+        cout << "set programmable gain to " << pga << endl;
+        radar.set_pga_level(pga);
     });
 
     mqtt_client.connect();
