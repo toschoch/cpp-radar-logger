@@ -10,7 +10,7 @@
 #include <memory>
 #include <exception>
 #include <nlohmann/json.hpp>
-#include "EndpointRadarBase.h"
+#include <EndpointRadarBase.h>
 #include <EndpointRadarFmcw.h>
 #include <EndpointRadarAdcxmc.h>
 
@@ -37,28 +37,14 @@ class Radar {
     int endpointAdcRadar = -1;
     int endpointP2GRadar = -1;
 
-    // radar enums
-    const map<Signal_Part_t, string> signal_part_names =
-            {{Signal_Part_t::EP_RADAR_BASE_SIGNAL_I_AND_Q, "I/Q"},
-             {Signal_Part_t ::EP_RADAR_BASE_SIGNAL_ONLY_I, "I"},
-             {Signal_Part_t ::EP_RADAR_BASE_SIGNAL_ONLY_Q, "Q"}};
-
-    const map<Rx_Data_Format_t, string> data_format_names =
-            {{Rx_Data_Format_t::EP_RADAR_BASE_RX_DATA_COMPLEX, "Complex"},
-             {Rx_Data_Format_t ::EP_RADAR_BASE_RX_DATA_COMPLEX_INTERLEAVED, "Complex interleaved"},
-             {Rx_Data_Format_t ::EP_RADAR_BASE_RX_DATA_REAL, "Real"}};
-
-    const map<Chirp_Direction_t, string> chirp_direction_names =
-            {{Chirp_Direction_t::EP_RADAR_FMCW_DIR_UPCHIRP_ONLY, "up"},
-             {Chirp_Direction_t::EP_RADAR_FMCW_DIR_DOWNCHIRP_ONLY, "down"},
-             {Chirp_Direction_t::EP_RADAR_FMCW_DIR_ALTERNATING_FIRST_UP, "alternating first up"},
-             {Chirp_Direction_t::EP_RADAR_FMCW_DIR_ALTERNATING_FIRST_DOWN, "alternating first down"}};
-
     void start_automatic_frame_triggering();
     void stop_automatic_frame_triggering();
     void send_settings_to_radar();
 
     void unsafe_set_pga_level(uint16_t ppa_level);
+    void unsafe_set_frame_format(const Frame_Format_t *fmt);
+    void unsafe_set_fmcw_configuration(const Fmcw_Configuration_t *config);
+    void unsafe_set_adc_configuration(const Adc_Xmc_Configuration_t *config);
 
 public:
 

@@ -9,13 +9,24 @@
 #include <vector>
 #include <map>
 
-std::string time_in_fmt_MMM(std::chrono::system_clock::time_point now, const std::string& fmt);
+using namespace std;
 
-std::string get_env_var( std::string const & key, std::string const & default_value);
+/// Given a map from keys to values, creates a new map from values to keys
+template<typename K, typename V>
+static map<V, K> reverse_map(const map<K, V>& m) {
+    map<V, K> r;
+    for (const auto& kv : m)
+        r[kv.second] = kv.first;
+    return r;
+}
 
-std::vector<float> generate_data(size_t size);
+string time_in_fmt_MMM(chrono::system_clock::time_point now, const string& fmt);
 
-std::string get_service_name();
-std::string get_device_name();
+string get_env_var( string const & key, string const & default_value);
+
+vector<float> generate_data(size_t size);
+
+string get_service_name();
+string get_device_name();
 
 #endif //RADARREADER_UTILS_H

@@ -9,6 +9,7 @@
 #include <chrono>
 #include "../include/utils.h"
 #include "../include/radar.h"
+#include "../include/radar_enums.h"
 #include "../include/shared_queue.h"
 
 #include "Protocol.h"
@@ -77,11 +78,11 @@ unique_ptr<Frame_Format_t> Radar::get_settings_frame_format() {
     }
     fmt->rx_mask = mask;
     auto signal_part = settings["data"]["signal part"].get<string>();
-    Signal_Part_t signal_enum;
+    /*Signal_Part_t signal_enum;
     for (const auto & signal_part_name : signal_part_names)
         if (signal_part_name.second == signal_part)
-            signal_enum = signal_part_name.first;
-    fmt->eSignalPart = signal_enum;
+            signal_enum = signal_part_name.first;*/
+    fmt->eSignalPart = signal_part_enums.at(signal_part);
 
     return fmt;
 }
@@ -93,11 +94,11 @@ unique_ptr<Fmcw_Configuration_t> Radar::get_settings_fmcw_configuration() {
     fmcw->upper_frequency_kHz = settings["frequency"]["high"].get<int>();
     fmcw->lower_frequency_kHz = settings["frequency"]["low"].get<int>();
     auto chirp_direction = settings["frequency"]["chirp"]["direction"].get<string>();
-    Chirp_Direction_t chirp_enum;
+    /*Chirp_Direction_t chirp_enum;
     for (const auto & chirp_name : chirp_direction_names)
         if (chirp_name.second == chirp_direction)
-            chirp_enum = chirp_name.first;
-    fmcw->direction = chirp_enum;
+            chirp_enum = chirp_name.first;*/
+    fmcw->direction = chirp_direction_enums.at(chirp_direction);
 
     return fmcw;
 }
@@ -218,7 +219,7 @@ void Radar::start_measurement_loop() {
         start_automatic_frame_triggering();
         try {
             main_loop = true;
-            while (true) {
+            while (main_loop.load()) {
                 request_data(true);
 
                 // do the posted settings task
@@ -226,7 +227,11 @@ void Radar::start_measurement_loop() {
                     queue.front()();
                     queue.pop_front();
                 }
+
+                this_thread::sleep_for(1ms);
             }
+            break;
+
         } catch (const RadarConnectionLost &err) {
             cout << "Warning: Lost connection to radar!" << endl;
             main_loop = false;
@@ -294,32 +299,31 @@ void Radar::set_frame_format(const Frame_Format_t *fmt) {
     }
 }
 
-void Radar::set_fmcw_configuration(const Fmcw_Configuration_t *config) {
-    stop_automatic_frame_triggering();
+void Radar::unsafe_set_fmcw_configuration(const Fmcw_Configuration_t *config) {
     ep_radar_fmcw_set_fmcw_configuration(protocolHandle, endpointFmcwRadar, config);
 
     // read back for updates
     request_fmcw_configuration();
     request_minimal_frame_interval();
-
-    if (main_loop) {
-        this_thread::sleep_for(send_settings_wait_time);
-        start_automatic_frame_triggering();
-    }
 }
 
+void Radar::set_fmcw_configuration(const Fmcw_Configuration_t *config) {
+    if (!main_loop.load())
+        unsafe_set_fmcw_configuration(config);
+    else {
+        queue.push_back([&]() {unsafe_set_fmcw_configuration(config);});
+    }
+}
 
 void Radar::unsafe_set_pga_level(uint16_t ppa_level) {
     ep_radar_p2g_set_pga_level(protocolHandle, endpointP2GRadar, ppa_level);
     // read back for updates
     request_adc_gain_level();
-
-    this_thread::sleep_for(send_settings_wait_time);
 }
 
 void Radar::set_pga_level(uint16_t ppa_level)
 {
-    if (!main_loop)
+    if (!main_loop.load())
         unsafe_set_pga_level(ppa_level);
     else {
         queue.push_back([&]() {unsafe_set_pga_level(ppa_level);});
@@ -327,16 +331,18 @@ void Radar::set_pga_level(uint16_t ppa_level)
 }
 
 
-void Radar::set_adc_configuration(const Adc_Xmc_Configuration_t *config) {
-    stop_automatic_frame_triggering();
+void Radar::unsafe_set_adc_configuration(const Adc_Xmc_Configuration_t *config) {
     ep_radar_adcxmc_set_adc_configuration(protocolHandle, endpointAdcRadar, config);
 
     // read back for updates
     request_adc_configuration();
     request_minimal_frame_interval();
+}
 
-    if (main_loop) {
-        this_thread::sleep_for(send_settings_wait_time);
-        start_automatic_frame_triggering();
+void Radar::set_adc_configuration(const Adc_Xmc_Configuration_t *config) {
+    if (!main_loop.load())
+        unsafe_set_adc_configuration(config);
+    else {
+        queue.push_back([&]() {unsafe_set_adc_configuration(config);});
     }
 }

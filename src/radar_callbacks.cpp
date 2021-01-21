@@ -9,6 +9,7 @@
 #include <Protocol.h>
 #include <EndpointRadarFmcw.h>
 #include <EndpointRadarAdcxmc.h>
+#include "../include/radar_enums.h"
 #include "../include/radar.h"
 
 using namespace std;
@@ -61,7 +62,7 @@ void Radar::on_frame_format_setting_received(void *context, int32_t protocol_han
 
     radar->settings["data"]["chirps per frame"] = frame_format->num_chirps_per_frame;
     radar->settings["data"]["samples per chrip"] = frame_format->num_samples_per_chirp;
-    radar->settings["data"]["signal part"] = radar->signal_part_names.at(frame_format->eSignalPart);
+    radar->settings["data"]["signal part"] = signal_part_names.at(frame_format->eSignalPart);
 
     vector<int> activated;
     for (auto ant=0;ant<8;++ant) {
@@ -84,7 +85,7 @@ void Radar::on_device_info_received(void *context, int32_t protocol_handle, uint
     radar->settings["frequency"]["limit"]["upper"] = device_info->max_rf_frequency_kHz;
     radar->settings["frequency"]["unit"] = "kHz";
     radar->settings["antennas"]["tx"]["power"]["max"] = device_info->max_tx_power;
-    radar->settings["data"]["format"] = radar->data_format_names.at(device_info->data_format);
+    radar->settings["data"]["format"] = data_format_names.at(device_info->data_format);
     radar->settings["temperature sensors"]["count"] = device_info->num_temp_sensors;
 
     radar->store_settings();
@@ -101,7 +102,7 @@ void Radar::on_chirp_duration_received(void *context, int32_t protocol_handle, u
 void Radar::on_fmcw_config_received(void *context, int32_t protocol_handle, uint8_t endpoint, const Fmcw_Configuration_t *fmcw_configuration)
 {
     auto radar = (Radar*) context;
-    radar->settings["frequency"]["chirp"]["direction"] = radar->chirp_direction_names.at(fmcw_configuration->direction);
+    radar->settings["frequency"]["chirp"]["direction"] = chirp_direction_names.at(fmcw_configuration->direction);
     radar->settings["frequency"]["low"] = fmcw_configuration->lower_frequency_kHz;
     radar->settings["frequency"]["high"] = fmcw_configuration->upper_frequency_kHz;
     radar->settings["frequency"]["bandwidth"] = fmcw_configuration->upper_frequency_kHz - fmcw_configuration->lower_frequency_kHz;
