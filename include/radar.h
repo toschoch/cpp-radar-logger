@@ -43,9 +43,9 @@ class Radar {
 
     void unsafe_set_frame_interval(int interval_us);
     void unsafe_set_pga_level(uint16_t ppa_level);
-    void unsafe_set_frame_format(const Frame_Format_t *fmt);
-    void unsafe_set_fmcw_configuration(shared_ptr<Fmcw_Configuration_t>);
-    void unsafe_set_adc_configuration(const Adc_Xmc_Configuration_t *config);
+    void unsafe_set_frame_format(shared_ptr<Frame_Format_t> fmt);
+    void unsafe_set_fmcw_configuration(shared_ptr<Fmcw_Configuration_t> config);
+    void unsafe_set_adc_configuration(shared_ptr<Adc_Xmc_Configuration_t> config);
 
 public:
 
@@ -82,10 +82,10 @@ public:
     // setters (thread safe)
     void set_frame_interval(int interval_us);
     void set_reconnection_interval(int interval_s);
-    void set_frame_format(const Frame_Format_t *fmt);
-    void set_fmcw_configuration(shared_ptr<Fmcw_Configuration_t>);
+    void set_frame_format(shared_ptr<Frame_Format_t> fmt);
+    void set_fmcw_configuration(shared_ptr<Fmcw_Configuration_t> config);
     void set_pga_level(uint16_t ppa_level);
-    void set_adc_configuration(const Adc_Xmc_Configuration_t *config);
+    void set_adc_configuration(shared_ptr<Adc_Xmc_Configuration_t> config);
 
 
     // requests

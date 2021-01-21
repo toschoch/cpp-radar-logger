@@ -107,7 +107,7 @@ shared_ptr<Fmcw_Configuration_t> Radar::get_settings_fmcw_configuration() {
 void Radar::send_settings_to_radar() {
 
     auto fmt = get_settings_frame_format();
-    set_frame_format(fmt.get());
+    set_frame_format(fmt);
 
     auto fmcw = get_settings_fmcw_configuration();
     set_fmcw_configuration(fmcw);
@@ -290,24 +290,24 @@ void Radar::set_frame_interval(int interval_us) {
     if (!main_loop.load())
         unsafe_set_frame_interval(interval_us);
     else {
-        queue.push_back([&]() {unsafe_set_frame_interval(interval_us);});
+        queue.push_back([&, interval_us]() {unsafe_set_frame_interval(interval_us);});
     }
 }
 
 
-void Radar::unsafe_set_frame_format(const Frame_Format_t *fmt) {
-    ep_radar_base_set_frame_format(protocolHandle, endpointBaseRadar, fmt);
+void Radar::unsafe_set_frame_format(shared_ptr<Frame_Format_t> fmt) {
+    ep_radar_base_set_frame_format(protocolHandle, endpointBaseRadar, fmt.get());
 
     // read back for updates
     request_frame_format();
     request_minimal_frame_interval();
 }
 
-void Radar::set_frame_format(const Frame_Format_t *fmt) {
+void Radar::set_frame_format(shared_ptr<Frame_Format_t> fmt) {
     if (!main_loop.load())
         unsafe_set_frame_format(fmt);
     else {
-        queue.push_back([&]() {unsafe_set_frame_format(fmt);});
+        queue.push_back([&, fmt]() {unsafe_set_frame_format(fmt);});
     }
 }
 
@@ -338,23 +338,23 @@ void Radar::set_pga_level(uint16_t ppa_level)
     if (!main_loop.load())
         unsafe_set_pga_level(ppa_level);
     else {
-        queue.push_back([&]() {unsafe_set_pga_level(ppa_level);});
+        queue.push_back([&, ppa_level]() {unsafe_set_pga_level(ppa_level);});
     }
 }
 
 
-void Radar::unsafe_set_adc_configuration(const Adc_Xmc_Configuration_t *config) {
-    ep_radar_adcxmc_set_adc_configuration(protocolHandle, endpointAdcRadar, config);
+void Radar::unsafe_set_adc_configuration(shared_ptr<Adc_Xmc_Configuration_t> config) {
+    ep_radar_adcxmc_set_adc_configuration(protocolHandle, endpointAdcRadar, config.get());
 
     // read back for updates
     request_adc_configuration();
     request_minimal_frame_interval();
 }
 
-void Radar::set_adc_configuration(const Adc_Xmc_Configuration_t *config) {
+void Radar::set_adc_configuration(shared_ptr<Adc_Xmc_Configuration_t> config) {
     if (!main_loop.load())
         unsafe_set_adc_configuration(config);
     else {
-        queue.push_back([&]() {unsafe_set_adc_configuration(config);});
+        queue.push_back([&, config]() {unsafe_set_adc_configuration(config);});
     }
 }

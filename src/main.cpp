@@ -4,6 +4,7 @@
 #include "Protocol.h"
 #include "EndpointRadarBase.h"
 #include "../include/radar.h"
+#include "../include/radar_enums.h"
 #include "../include/utils.h"
 #include "../include/arrow.h"
 #include "../include/zmq.h"
@@ -31,22 +32,26 @@ int main(void)
 
     mqtt_client.subscribe("data/frame_interval/current", [&radar](const string& s) {
         auto interval_us = stoi(s);
-        cout << "set measurement interval to " << interval_us << "us" << endl;
-        // radar.settings["data"]["frame interval"]["current"] = interval_us;
-        // radar.store_settings();
+        cout << "set measurement interval to: " << interval_us << "us" << endl;
         radar.set_frame_interval(interval_us);
     });
     mqtt_client.subscribe("antennas/tx/power/current",[&radar](const string& s) {
         auto tx_power = stoi(s);
-        cout << "set transmission power to " << tx_power << endl;
-        // radar.settings["antennas"]["tx"]["power"]["current"] = tx_power;
+        cout << "set transmission power to: " << tx_power << endl;
         auto fmcw = radar.get_settings_fmcw_configuration();
         fmcw->tx_power = tx_power;
         radar.set_fmcw_configuration(fmcw);
     });
+    mqtt_client.subscribe("frequency/chirp/direction",[&radar](const string& s) {
+        auto chirp_direction = chirp_direction_enums.at(s);
+        cout << "set chirp direction to: " << s << endl;
+        auto fmcw = radar.get_settings_fmcw_configuration();
+        fmcw->direction = chirp_direction;
+        radar.set_fmcw_configuration(fmcw);
+    });
     mqtt_client.subscribe("sampling/programmable_gain_level/current",[&radar](const string& s) {
         auto pga = stoi(s);
-        cout << "set programmable gain to " << pga << endl;
+        cout << "set programmable gain to: " << pga << endl;
         radar.set_pga_level(pga);
     });
 
@@ -61,7 +66,7 @@ int main(void)
     auto received_frame_data = [&zmq_server](const Frame_Info_t* frame_info)
     {
         auto t = std::chrono::system_clock::now();
-        if (frame_info->frame_number % 5 == 0)
+        if (frame_info->frame_number % 50 == 0)
             cout << "frame " << frame_info->frame_number << endl;
 /*
         for (int ant=0; ant<frame_info->num_rx_antennas; ant++)
