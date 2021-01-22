@@ -1,12 +1,10 @@
 version: '2.1'
 services:
   radar-reader:
-    image: shocki/rpi-radar-reader
+    image: shocki/rpi-radar-reader:0.0.2
     privileged: true
     restart: always
     ports:
       - 5555:5555
     labels:
       io.balena.features.kernel-modules: '1'
-    volumes:
-      - radar-data:/radar

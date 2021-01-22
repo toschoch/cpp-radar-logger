@@ -18,6 +18,8 @@
 #include "EndpointRadarAdcxmc.h"
 #include "EndpointRadarP2G.h"
 
+#define DEFAULT_MEASUREMENT_INTERVAL_US 1000000
+
 using namespace std;
 
 Radar::Radar() : settings_file(get_env_var("RADAR_SETTINGS", "radar/settings.json")),
@@ -47,7 +49,14 @@ bool Radar::connect() {
         identify_available_apis();
         stop_automatic_frame_triggering();
         register_settings_callbacks();
-        send_settings_to_radar();
+        if (settings.empty()) {
+            cout << "settings file is empty, read settings from radar ..." << endl;
+            settings["data"]["frame interval"]["current"] = DEFAULT_MEASUREMENT_INTERVAL_US;
+            update_settings();
+        }
+        else
+            cout << "write settings to radar ..." << endl;
+            send_settings_to_radar();
     }
 
     return found;

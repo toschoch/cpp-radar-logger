@@ -152,15 +152,15 @@ void MQTTClient::reconnect() {
 
 // Re-connection failure
 void MQTTClient::on_failure(const mqtt::token& tok) {
-    cout << "Connection attempt failed" << endl;
+    cout << "MQTT connection attempt failed" << endl;
     reconnect();
 }
 
 
 // (Re)connection success
 void MQTTClient::connected(const string& cause) {
-    cout << "Connection success" << endl;
-    cout << "Subscribing to topic/s:" << endl;
+    cout << "MQTT connection success" << endl;
+    cout << "MQTT subscribing to topic/s:" << endl;
     for (auto i=0; i<topics->size(); ++i)
         cout << "\t" << (*topics)[i] << endl;
     cout << endl;
@@ -171,7 +171,7 @@ void MQTTClient::connected(const string& cause) {
 // Callback for when the connection is lost.
 // This will initiate the attempt to manually reconnect.
 void MQTTClient::connection_lost(const string& cause) {
-    cout << "Connection lost" << endl;
+    cout << "MQTT connection lost" << endl;
     if (!cause.empty())
         cout << "\tcause: " << cause << endl;
 

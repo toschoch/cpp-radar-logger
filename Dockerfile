@@ -12,17 +12,14 @@ RUN git clone https://github.com/eclipse/paho.mqtt.c.git && git clone https://gi
 COPY install_mqtt.sh ./
 RUN chmod +x install_mqtt.sh && ./install_mqtt.sh
 
-COPY apt.preferences /etc/apt/preferences
-COPY apt.sources /etc/apt/sources.list
-RUN apt-get update && apt-get install -y libzmq3-dev && \
- apt-get install -y -t testing nlohmann-json3-dev && apt-cache policy nlohmann-json3-dev
+RUN apt-get install -y libzmq3-dev nlohmann-json3-dev
 
 # Now install ZMQPP
 RUN git clone git://github.com/zeromq/zmqpp.git
 COPY install_zmqpp.sh ./
 RUN chmod +x install_zmqpp.sh && ./install_zmqpp.sh
 
-RUN cat /etc/os-release && apt-cache policy nlohmann-json3-dev
+RUN apt-cache policy nlohmann-json3-dev
 
 WORKDIR ./src
 
@@ -36,7 +33,7 @@ WORKDIR ../build
 RUN cmake .. /src && make
 
 FROM balenalib/raspberrypi3:run
-RUN apt-get update && apt-get install -y libzmq5 && rm -rf /var/lib/apt/lists/* && mkdir /radar/
+RUN apt-get update && apt-get install -y libzmq5 && rm -rf /var/lib/apt/lists/*
 
 ENV UDEV=1
 

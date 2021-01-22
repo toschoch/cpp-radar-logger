@@ -5,7 +5,6 @@ add_subdirectory(RadarApi)
 
 set(CMAKE_CXX_STANDARD 14)
 
-#find_package(OpenCV REQUIRED COMPONENTS core hdf)
 
 find_package(Arrow REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
