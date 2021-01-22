@@ -21,7 +21,7 @@ public:
 
     void start();
 
-    bool send_buffer(std::shared_ptr<arrow::Buffer> buffer);
+    bool send_time_and_buffer(double time, std::shared_ptr<arrow::Buffer> buffer);
 
     zmqpp::socket socket;
 };

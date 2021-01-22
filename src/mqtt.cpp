@@ -54,20 +54,11 @@ using namespace std;
 // results to the console.
 
 void action_listener::on_failure(const mqtt::token& tok) {
-    cout << name_ << " failure";
-    if (tok.get_message_id() != 0)
-        cout << " for token: [" << tok.get_message_id() << "]" << endl;
-    cout << endl;
+    cout << name_ << " failure" << endl;
 }
 
 void action_listener::on_success(const mqtt::token& tok) {
-    cout << name_ << " success";
-    if (tok.get_message_id() != 0)
-        cout << " for token: [" << tok.get_message_id() << "]" << endl;
-    auto top = tok.get_topics();
-    if (top && !top->empty())
-        cout << "\ttoken topic: '" << (*top)[0] << "', ..." << endl;
-    cout << endl;
+    cout << name_ << " success" << endl;
 }
 
 MQTTClient::MQTTClient(string prefix) : broker(get_env_var("MQTT_BROKER", "")),
@@ -169,9 +160,9 @@ void MQTTClient::on_failure(const mqtt::token& tok) {
 // (Re)connection success
 void MQTTClient::connected(const string& cause) {
     cout << "Connection success" << endl;
-    cout << "Subscribing to topic...'";
+    cout << "Subscribing to topic/s:" << endl;
     for (auto i=0; i<topics->size(); ++i)
-        cout << (*topics)[i] << " ";
+        cout << "\t" << (*topics)[i] << endl;
     cout << endl;
 
     cli.subscribe(topics, qos_vector, nullptr, subListener);

@@ -57,17 +57,21 @@ int main(void)
 
     mqtt_client.connect();
 
+    this_thread::sleep_for(500ms);
 
-    cout << "success! connecting...";
+    cout << "success! connecting..." << endl;
 
     zmq_server.start();
 
     // called every time ep_radar_base_get_frame_data method is called to return measured time domain signals
     auto received_frame_data = [&zmq_server](const Frame_Info_t* frame_info)
     {
-        auto t = std::chrono::system_clock::now();
+        auto t = std::chrono::system_clock::now().time_since_epoch().count() * 1e-9;
+
+/*        cout.precision(10);
         if (frame_info->frame_number % 50 == 0)
-            cout << "frame " << frame_info->frame_number << endl;
+            cout << "time: " << t << ", frame " << frame_info->frame_number << endl;
+        cout.precision();*/
 /*
         for (int ant=0; ant<frame_info->num_rx_antennas; ant++)
         {
@@ -95,7 +99,7 @@ int main(void)
         data.assign(frame_info->sample_data, frame_info->sample_data+elements);
 
         auto buf = create_and_serialize_tensor(dims, data);
-        zmq_server.send_buffer(buf);
+        zmq_server.send_time_and_buffer(t, buf);
     };
 
     radar.register_data_received_callback(received_frame_data);

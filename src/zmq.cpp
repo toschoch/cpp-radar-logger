@@ -26,8 +26,9 @@ void ZMQ::start() {
     socket.bind(endpoint);
 }
 
-bool ZMQ::send_buffer(shared_ptr<arrow::Buffer> buffer) {
+bool ZMQ::send_time_and_buffer(double time, std::shared_ptr<arrow::Buffer> buffer) {
     zmqpp::message message;
+    message.add(time);
     message.add_raw(buffer->data(), buffer->size());
 
     return socket.send(message);
