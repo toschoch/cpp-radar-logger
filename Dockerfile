@@ -12,14 +12,17 @@ RUN git clone https://github.com/eclipse/paho.mqtt.c.git && git clone https://gi
 COPY install_mqtt.sh ./
 RUN chmod +x install_mqtt.sh && ./install_mqtt.sh
 
-RUN apt-get install -y libzmq3-dev nlohmann-json3-dev
+COPY apt.preferences /etc/apt/preferences
+COPY apt.sources /etc/apt/sources.list
+RUN apt-get update && apt-get install -y libzmq3-dev && \
+ apt-get install -y -t testing nlohmann-json3-dev && apt-cache policy nlohmann-json3-dev
 
 # Now install ZMQPP
 RUN git clone git://github.com/zeromq/zmqpp.git
 COPY install_zmqpp.sh ./
 RUN chmod +x install_zmqpp.sh && ./install_zmqpp.sh
 
-RUN apt-cache policy nlohmann-json3-dev
+RUN cat /etc/os-release && apt-cache policy nlohmann-json3-dev
 
 WORKDIR ./src
 
@@ -33,15 +36,12 @@ WORKDIR ../build
 RUN cmake .. /src && make
 
 FROM balenalib/raspberrypi3:run
-RUN apt-get update && apt-get install -y libzmq5 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libzmq5 && rm -rf /var/lib/apt/lists/* && mkdir /radar/
 
 ENV UDEV=1
 
-COPY --from=builder /usr/local/lib/libzmqpp* /usr/local/lib/
+#RUN install_packages libopenblas-base libopencv-core3.2 libopencv-contrib3.2
 COPY --from=builder /build/RadarReader .
-
-
-RUN mkdir /radar/ && ldconfig
 
 CMD ./RadarReader
 

@@ -1,0 +1,6 @@
+deb http://deb.debian.org/debian stable main
+deb http://deb.debian.org/debian stable-updates main
+deb http://archive.raspbian.org/raspbian stable main contrib non-free rpi firmware
+deb http://deb.debian.org/debian testing main
+deb http://deb.debian.org/debian testing-updates main
+deb http://archive.raspbian.org/raspbian testing main contrib non-free rpi firmware
