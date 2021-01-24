@@ -85,7 +85,8 @@ int main(void)
     radar.register_data_received_callback(received_frame_data);
 
     auto received_settings = [&mqtt_client](const json& settings) {
-        mqtt_client.publish_string("settings", settings.dump(2), 1, true);
+        if (mqtt_client.is_connected())
+            mqtt_client.publish_string("settings", settings.dump(2), 1, true);
     };
 
     radar.register_settings_received_callback(received_settings);

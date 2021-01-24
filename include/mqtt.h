@@ -13,6 +13,7 @@
 #include <mqtt/async_client.h>
 #include <thread>
 #include <chrono>
+#include <atomic>
 #include "../include/utils.h"
 
 using namespace std;
@@ -46,6 +47,8 @@ class MQTTClient : public virtual mqtt::callback,
     shared_ptr<mqtt::string_collection> topics;
     vector<int> qos_vector;
     vector<function<void(const string&)>> topic_callbacks;
+
+    atomic<bool> isconnected;
 
     static tuple<string, string> get_credentials();
 
@@ -85,6 +88,7 @@ public:
     void publish_string(const string& subtopic, const string& payload, int qos=1, bool retained=false);
 
     void connect();
+    bool is_connected() const;
     void disconnect();
 };
 

@@ -64,7 +64,7 @@ void action_listener::on_success(const mqtt::token& tok) {
 MQTTClient::MQTTClient(string prefix) : broker(get_env_var("MQTT_BROKER", "")),
                                               client_id(get_device_name()+"/"+get_service_name()),
                                               cli(broker, client_id), subListener("Subscription"),
-                                              topic_prefix(prefix+"/")
+                                              topic_prefix(prefix+"/"), isconnected(false)
 {
     connOpts.set_clean_session(true);
 
@@ -94,7 +94,9 @@ void MQTTClient::subscribe(const string& subtopic, const function<void(string)>&
 
 void MQTTClient::publish_string(const string &subtopic, const string &payload, int qos, bool retained) {
     auto topic = topic_prefix + subtopic;
-    cli.publish(topic, payload, qos, retained);
+    if (cli.is_connected()) {
+        cli.publish(topic, payload, qos, retained);
+    }
 }
 
 void MQTTClient::connect() {
@@ -114,10 +116,15 @@ void MQTTClient::disconnect() {
         cout << "\nDisconnecting from the MQTT server..." << flush;
         cli.disconnect()->wait();
         cout << "OK" << endl;
+        isconnected = false;
     }
     catch (const mqtt::exception& exc) {
         cerr << exc << endl;
     }
+}
+
+bool MQTTClient::is_connected() const {
+    return isconnected.load();
 }
 
 tuple<string, string> MQTTClient::get_credentials()
@@ -145,7 +152,7 @@ tuple<string, string> MQTTClient::get_credentials()
 }
 
 void MQTTClient::reconnect() {
-    this_thread::sleep_for(10s);
+    this_thread::sleep_for(15s);
     try {
         cli.connect(connOpts, nullptr, *this);
     }
@@ -165,6 +172,7 @@ void MQTTClient::on_failure(const mqtt::token& tok) {
 // (Re)connection success
 void MQTTClient::connected(const string& cause) {
     cout << "MQTT connection success" << endl;
+    isconnected = true;
     cout << "MQTT subscribing to topic/s:" << endl;
     for (auto i=0; i<topics->size(); ++i)
         cout << "\t" << (*topics)[i] << endl;
@@ -177,6 +185,7 @@ void MQTTClient::connected(const string& cause) {
 // This will initiate the attempt to manually reconnect.
 void MQTTClient::connection_lost(const string& cause) {
     cout << "MQTT connection lost" << endl;
+    isconnected = false;
     if (!cause.empty())
         cout << "\tcause: " << cause << endl;
 
