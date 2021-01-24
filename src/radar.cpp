@@ -163,6 +163,10 @@ void Radar::register_data_received_callback(const function<void(const Frame_Info
     ep_radar_base_set_callback_data_frame(callback_wrapper, this);
 }
 
+void Radar::register_settings_received_callback(const function<void(const json &)> &callback) {
+    settings_callback = callback;
+}
+
 void Radar::register_settings_callbacks() {
     // register call back functions for adc data
     if (endpointBaseRadar > 0) {
@@ -184,6 +188,13 @@ void Radar::register_settings_callbacks() {
     if (endpointP2GRadar) {
         ep_radar_p2g_set_callback_pga_level(on_adc_gain_level_received, this);
     }
+}
+
+void Radar::on_settings_changed() {
+    store_settings();
+
+    if (settings_callback != nullptr)
+        settings_callback(settings);
 }
 
 void Radar::update_settings() const {
@@ -232,7 +243,6 @@ void Radar::start_measurement_loop() {
                 if (!queue.empty()) {
                     stop_automatic_frame_triggering();
                     while (!queue.empty()) {
-                        cout << "send settings task..." << endl;
                         queue.front()();
                         queue.pop_front();
                         this_thread::sleep_for(send_settings_wait_time);

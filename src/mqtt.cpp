@@ -86,10 +86,15 @@ MQTTClient::MQTTClient(string prefix) : broker(get_env_var("MQTT_BROKER", "")),
     cli.set_callback(*this);
 }
 
-void MQTTClient::subscribe(string subtopic, const function<void(string)>& callback) {
+void MQTTClient::subscribe(const string& subtopic, const function<void(string)>& callback) {
     topics->push_back(topic_prefix+subtopic);
-    topic_callbacks.push_back(callback);
+    topic_callbacks.emplace_back(callback);
     qos_vector.push_back(qos);
+}
+
+void MQTTClient::publish_string(const string &subtopic, const string &payload, int qos, bool retained) {
+    auto topic = topic_prefix + subtopic;
+    cli.publish(topic, payload, qos, retained);
 }
 
 void MQTTClient::connect() {

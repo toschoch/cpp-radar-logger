@@ -68,26 +68,6 @@ int main(void)
     {
         auto t = std::chrono::system_clock::now().time_since_epoch().count() * 1e-9;
 
-/*        cout.precision(10);
-        if (frame_info->frame_number % 50 == 0)
-            cout << "time: " << t << ", frame " << frame_info->frame_number << endl;
-        cout.precision();*/
-/*
-        for (int ant=0; ant<frame_info->num_rx_antennas; ant++)
-        {
-            for (int chirp=0; chirp<frame_info->num_chirps; chirp++)
-            {
-                int chirp_start = chirp * frame_info->num_rx_antennas * frame_info->num_samples_per_chirp *
-                                  (frame_info->data_format==EP_RADAR_BASE_RX_DATA_REAL ? 1 : 2);
-                for (int sample=0; sample<frame_info->num_samples_per_chirp; sample++)
-                {
-                    int offset = chirp_start +
-                                 2 * ant*frame_info->num_samples_per_chirp + sample;
-                    //cout << fixed << frame_info->sample_data[offset] << "+" << frame_info->sample_data[offset+1] << "j ";
-                }
-                //cout << endl;
-            }
-        }*/
         vector<int64_t> dims;
         dims.push_back(frame_info->num_chirps);
         dims.push_back(frame_info->num_rx_antennas);
@@ -103,6 +83,12 @@ int main(void)
     };
 
     radar.register_data_received_callback(received_frame_data);
+
+    auto received_settings = [&mqtt_client](const json& settings) {
+        mqtt_client.publish_string("settings", settings.dump(2), 1, true);
+    };
+
+    radar.register_settings_received_callback(received_settings);
 
     cout << "done!" << endl << endl;
     radar.update_settings();

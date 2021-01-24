@@ -81,7 +81,8 @@ class MQTTClient : public virtual mqtt::callback,
 public:
     MQTTClient(string prefix="");
 
-    void subscribe(string subtopic, const function<void(string)>& callback);
+    void subscribe(const string& subtopic, const function<void(string)>& callback);
+    void publish_string(const string& subtopic, const string& payload, int qos=1, bool retained=false);
 
     void connect();
     void disconnect();

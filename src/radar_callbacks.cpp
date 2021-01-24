@@ -71,7 +71,7 @@ void Radar::on_frame_format_setting_received(void *context, int32_t protocol_han
     }
     radar->settings["antennas"]["rx"]["activated"] = activated;
 
-    radar->store_settings();
+    radar->on_settings_changed();
 }
 
 void Radar::on_device_info_received(void *context, int32_t protocol_handle, uint8_t endpoint, const Device_Info_t *device_info)
@@ -88,7 +88,7 @@ void Radar::on_device_info_received(void *context, int32_t protocol_handle, uint
     radar->settings["data"]["format"] = data_format_names.at(device_info->data_format);
     radar->settings["temperature sensors"]["count"] = device_info->num_temp_sensors;
 
-    radar->store_settings();
+    radar->on_settings_changed();
 }
 
 void Radar::on_chirp_duration_received(void *context, int32_t protocol_handle, uint8_t endpoint, uint32_t chirp_duration_ns)
@@ -96,7 +96,7 @@ void Radar::on_chirp_duration_received(void *context, int32_t protocol_handle, u
     auto radar = (Radar*) context;
     radar->settings["frequency"]["chirp"]["duration ns"] = chirp_duration_ns;
 
-    radar->store_settings();
+    radar->on_settings_changed();
 }
 
 void Radar::on_fmcw_config_received(void *context, int32_t protocol_handle, uint8_t endpoint, const Fmcw_Configuration_t *fmcw_configuration)
@@ -110,7 +110,7 @@ void Radar::on_fmcw_config_received(void *context, int32_t protocol_handle, uint
     radar->settings["frequency"]["unit"] = "kHz";
     radar->settings["antennas"]["tx"]["power"]["current"] = fmcw_configuration->tx_power;
 
-    radar->store_settings();
+    radar->on_settings_changed();
 }
 void Radar::on_fmcw_bandwith_per_second_received(void *context, int32_t protocol_handle, uint8_t endpoint,
                                                  uint32_t bandwidth_per_second) {
@@ -118,7 +118,7 @@ void Radar::on_fmcw_bandwith_per_second_received(void *context, int32_t protocol
 
     radar->settings["frequency"]["chirp"]["velocity kHz/s"] = bandwidth_per_second;
 
-    radar->store_settings();
+    radar->on_settings_changed();
 }
 
 void Radar::on_adc_gain_level_received(void *context, int32_t protocol_handle, uint8_t endpoint, uint16_t pga_level_val)
@@ -126,7 +126,7 @@ void Radar::on_adc_gain_level_received(void *context, int32_t protocol_handle, u
     auto radar = (Radar*) context;
     radar->settings["sampling"]["programmable gain level"] = pga_level_val;
 
-    radar->store_settings();
+    radar->on_settings_changed();
 }
 
 void Radar::on_adc_config_received(void *context, int32_t protocol_handle, uint8_t endpoint, const Adc_Xmc_Configuration_t *adc_configuration)
@@ -134,7 +134,7 @@ void Radar::on_adc_config_received(void *context, int32_t protocol_handle, uint8
     auto radar = (Radar*) context;
     radar->settings["sampling"]["frequency Hz"] = adc_configuration->samplerate_Hz;
 
-    radar->store_settings();
+    radar->on_settings_changed();
 }
 
 void Radar::on_minimal_frame_interval_received(void *context, int32_t protocol_handle, uint8_t endpoint,
@@ -143,5 +143,5 @@ void Radar::on_minimal_frame_interval_received(void *context, int32_t protocol_h
     radar->settings["data"]["frame interval"]["min"] = min_frame_interval_us;
     radar->settings["data"]["frame interval"]["current"] = max(min_frame_interval_us, radar->settings["data"]["frame interval"]["current"].get<uint32_t>());
 
-    radar->store_settings();
+    radar->on_settings_changed();
 }

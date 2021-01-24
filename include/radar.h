@@ -41,6 +41,9 @@ class Radar {
     void stop_automatic_frame_triggering();
     void send_settings_to_radar();
 
+    void register_settings_callbacks();
+    void on_settings_changed();
+
     void unsafe_set_frame_interval(int interval_us);
     void unsafe_set_pga_level(uint16_t ppa_level);
     void unsafe_set_frame_format(shared_ptr<Frame_Format_t> fmt);
@@ -55,6 +58,7 @@ public:
     // should be protected, but because of c callbacks
     json settings;
     function<void(const Frame_Info_t*)> data_callback;
+    function<void(const json& settings)> settings_callback = nullptr;
 
     void store_settings();
     void restore_settings();
@@ -68,7 +72,7 @@ public:
     void identify_available_apis();
 
     void register_data_received_callback(const function<void(const Frame_Info_t*)>& callback);
-    void register_settings_callbacks();
+    void register_settings_received_callback(const function<void(const json& settings)>& callback);
 
     void start_measurement_loop();
     void stop_measurement();
