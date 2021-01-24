@@ -88,10 +88,6 @@ shared_ptr<Frame_Format_t> Radar::get_settings_frame_format() {
     }
     fmt->rx_mask = mask;
     auto signal_part = settings["data"]["signal part"].get<string>();
-    /*Signal_Part_t signal_enum;
-    for (const auto & signal_part_name : signal_part_names)
-        if (signal_part_name.second == signal_part)
-            signal_enum = signal_part_name.first;*/
     fmt->eSignalPart = signal_part_enums.at(signal_part);
 
     return fmt;

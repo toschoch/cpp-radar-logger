@@ -17,6 +17,7 @@ shared_ptr<arrow::Buffer> create_and_serialize_tensor(const vector<int64_t>& dim
 
     auto buf = arrow::Buffer::Wrap<float>(data);
 
+
     // create a tensor
     auto result = arrow::Tensor::Make(arrow::float32(), buf, dims);
 

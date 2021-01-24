@@ -7,7 +7,11 @@
 
 #include <arrow/tensor.h>
 #include <arrow/buffer.h>
+#include <vector>
 
-std::shared_ptr<arrow::Buffer> create_and_serialize_tensor(const std::vector<int64_t>& dims, const std::vector<float>& data);
+using namespace std;
+
+shared_ptr<arrow::Buffer> create_and_serialize_tensor(const vector<int64_t>& dims,
+                                                      const vector<float>& data);
 
 #endif //RADARREADER_ARROW_H

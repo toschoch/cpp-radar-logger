@@ -89,10 +89,10 @@ int main(void)
             }
         }*/
         vector<int64_t> dims;
-        dims.push_back(frame_info->num_rx_antennas);
         dims.push_back(frame_info->num_chirps);
-        dims.push_back(frame_info->num_samples_per_chirp);
+        dims.push_back(frame_info->num_rx_antennas);
         dims.push_back(frame_info->data_format==EP_RADAR_BASE_RX_DATA_REAL ? 1 : 2);
+        dims.push_back(frame_info->num_samples_per_chirp);
 
         auto elements = accumulate(begin(dims), end(dims), 1, multiplies<int>());
         vector<float> data;
