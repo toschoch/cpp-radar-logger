@@ -35,6 +35,20 @@ int main(void)
         cout << "set measurement interval to: " << interval_us << "us" << endl;
         radar.set_frame_interval(interval_us);
     });
+    mqtt_client.subscribe("data/chirps_per_frame/set",[&radar](const string& s) {
+        auto n_chirps = stoi(s);
+        cout << "set number of chirps per frame to: " << n_chirps << endl;
+        auto frame_fmt = radar.get_settings_frame_format();
+        frame_fmt->num_chirps_per_frame = n_chirps;
+        radar.set_frame_format(frame_fmt);
+    });
+    mqtt_client.subscribe("data/samples_per_chirp/set",[&radar](const string& s) {
+        auto n_samples = stoi(s);
+        cout << "set number of samples per chirp to: " << n_samples << endl;
+        auto frame_fmt = radar.get_settings_frame_format();
+        frame_fmt->num_samples_per_chirp = n_samples;
+        radar.set_frame_format(frame_fmt);
+    });
     mqtt_client.subscribe("antennas/tx/power/current",[&radar](const string& s) {
         auto tx_power = stoi(s);
         cout << "set transmission power to: " << tx_power << endl;
