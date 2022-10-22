@@ -79,7 +79,7 @@ void Radar::restore_settings() {
 shared_ptr<Frame_Format_t> Radar::get_settings_frame_format() {
     auto fmt = unique_ptr<Frame_Format_t>{new Frame_Format_t};
     fmt->num_chirps_per_frame = settings["data"]["chirps per frame"].get<int>();
-    fmt->num_samples_per_chirp = settings["data"]["samples per chrip"].get<int>();
+    fmt->num_samples_per_chirp = settings["data"]["samples per chirp"].get<int>();
     auto activated = settings["antennas"]["rx"]["activated"];
     auto mask = 0x00;
     for (auto & it : activated) {

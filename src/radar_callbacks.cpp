@@ -61,7 +61,7 @@ void Radar::on_frame_format_setting_received(void *context, int32_t protocol_han
     auto radar = (Radar*) context;
 
     radar->settings["data"]["chirps per frame"] = frame_format->num_chirps_per_frame;
-    radar->settings["data"]["samples per chrip"] = frame_format->num_samples_per_chirp;
+    radar->settings["data"]["samples per chirp"] = frame_format->num_samples_per_chirp;
     radar->settings["data"]["signal part"] = signal_part_names.at(frame_format->eSignalPart);
 
     vector<int> activated;

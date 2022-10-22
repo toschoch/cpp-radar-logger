@@ -30,7 +30,7 @@ int main(void)
 
     MQTTClient mqtt_client(get_device_name()+"/radar");
 
-    mqtt_client.subscribe("data/frame_interval/current", [&radar](const string& s) {
+    mqtt_client.subscribe("data/frame_interval/set", [&radar](const string& s) {
         auto interval_us = stoi(s);
         cout << "set measurement interval to: " << interval_us << "us" << endl;
         radar.set_frame_interval(interval_us);
@@ -49,21 +49,21 @@ int main(void)
         frame_fmt->num_samples_per_chirp = n_samples;
         radar.set_frame_format(frame_fmt);
     });
-    mqtt_client.subscribe("antennas/tx/power/current",[&radar](const string& s) {
+    mqtt_client.subscribe("antennas/tx/power/set",[&radar](const string& s) {
         auto tx_power = stoi(s);
         cout << "set transmission power to: " << tx_power << endl;
         auto fmcw = radar.get_settings_fmcw_configuration();
         fmcw->tx_power = tx_power;
         radar.set_fmcw_configuration(fmcw);
     });
-    mqtt_client.subscribe("frequency/chirp/direction",[&radar](const string& s) {
+    mqtt_client.subscribe("frequency/chirp/direction/set",[&radar](const string& s) {
         auto chirp_direction = chirp_direction_enums.at(s);
         cout << "set chirp direction to: " << s << endl;
         auto fmcw = radar.get_settings_fmcw_configuration();
         fmcw->direction = chirp_direction;
         radar.set_fmcw_configuration(fmcw);
     });
-    mqtt_client.subscribe("sampling/programmable_gain_level/current",[&radar](const string& s) {
+    mqtt_client.subscribe("sampling/programmable_gain_level/set",[&radar](const string& s) {
         auto pga = stoi(s);
         cout << "set programmable gain to: " << pga << endl;
         radar.set_pga_level(pga);
