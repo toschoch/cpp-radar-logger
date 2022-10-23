@@ -3,7 +3,7 @@ stages:
 docker-build:
   # Use the official docker image.
   image: docker:latest
-  stage: builds
+  stage: build
   tags:
     - arm64
   services:
