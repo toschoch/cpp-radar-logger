@@ -58,11 +58,28 @@ int main(void)
     });
     mqtt_client.subscribe("frequency/chirp/direction/set",[&radar](const string& s) {
         auto chirp_direction = chirp_direction_enums.at(s);
-        cout << "set chirp direction to: " << s << endl;
+        cout << "set chirp direction to: " << s << "(" << chirp_direction << ")" << endl;
         auto fmcw = radar.get_settings_fmcw_configuration();
         fmcw->direction = chirp_direction;
         radar.set_fmcw_configuration(fmcw);
     });
+
+    mqtt_client.subscribe("frequency/low/set",[&radar](const string& s) {
+        auto freq = stoi(s);
+        cout << "set (lower) frequency to: " << s << endl;
+        auto fmcw = radar.get_settings_fmcw_configuration();
+        fmcw->lower_frequency_kHz = freq;
+        radar.set_fmcw_configuration(fmcw);
+    });
+
+    mqtt_client.subscribe("frequency/bandwidth/set",[&radar](const string& s) {
+        auto bw = stoi(s);
+        cout << "set bandwidth to: " << s << endl;
+        auto fmcw = radar.get_settings_fmcw_configuration();
+        fmcw->upper_frequency_kHz = fmcw->lower_frequency_kHz + bw;
+        radar.set_fmcw_configuration(fmcw);
+    });
+
     mqtt_client.subscribe("sampling/programmable_gain_level/set",[&radar](const string& s) {
         auto pga = stoi(s);
         cout << "set programmable gain to: " << pga << endl;
