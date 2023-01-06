@@ -4,18 +4,18 @@ RUN apt-get update && DEBIAN_FRONTEND="noninteractive" TZ="Europe/Zurich" apt-ge
                       build-essential cmake git wget curl gpg \
                       ca-certificates lsb-release
                       # libopenblas-base libopencv-dev
-RUN git clone https://github.com/apache/arrow.git
+RUN git clone --branch apache-arrow-10.0.1 https://github.com/apache/arrow.git arrow
 COPY install_arrow.sh ./
 RUN chmod +x install_arrow.sh && ./install_arrow.sh
 
-RUN git clone https://github.com/eclipse/paho.mqtt.c.git && git clone https://github.com/eclipse/paho.mqtt.cpp
+RUN git clone --branch v1.3.12 https://github.com/eclipse/paho.mqtt.c.git && git clone --branch v1.2.0 https://github.com/eclipse/paho.mqtt.cpp
 COPY install_mqtt.sh ./
 RUN chmod +x install_mqtt.sh && ./install_mqtt.sh
 
 RUN apt-get install -y libzmq3-dev nlohmann-json3-dev
 
 # Now install ZMQPP
-RUN git clone https://github.com/zeromq/zmqpp.git
+RUN git clone --branch 4.2.0 https://github.com/zeromq/zmqpp.git
 COPY install_zmqpp.sh ./
 RUN chmod +x install_zmqpp.sh && ./install_zmqpp.sh
 
