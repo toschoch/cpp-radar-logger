@@ -1,4 +1,4 @@
-FROM balenalib/raspberrypi3:build AS builder
+FROM balenalib/raspberrypi3-64:build AS builder
 
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" TZ="Europe/Zurich" apt-get install -y \
                       build-essential cmake git wget curl gpg \
@@ -32,7 +32,7 @@ WORKDIR ../build
 
 RUN cmake .. /src && make
 
-FROM balenalib/raspberrypi3:run
+FROM balenalib/raspberrypi3-64:run
 RUN apt-get update && apt-get install -y libzmq5 && rm -rf /var/lib/apt/lists/*
 
 ENV UDEV=1
