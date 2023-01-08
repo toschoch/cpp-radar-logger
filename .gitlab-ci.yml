@@ -2,7 +2,7 @@ stages:
   - build
 docker-build:
   # Use the official docker image.
-  image: docker:19
+  image: docker:20.10.16
   stage: build
   variables:
     DOCKER_HOST: "tcp://docker:2375"
@@ -10,7 +10,7 @@ docker-build:
   tags:
     - arm64
   services:
-    - docker:19-dind
+    - docker:20.10.16-dind
   before_script:
     - docker login -u "$DOCKER_USER" -p "$DOCKER_PW"
     # Default branch leaves tag empty (= latest tag)
