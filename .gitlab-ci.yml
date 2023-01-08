@@ -9,8 +9,6 @@ docker-build:
     DOCKER_TLS_CERTDIR: ""
   tags:
     - arm64
-  services:
-    - docker:20.10.16-dind
   before_script:
     - docker login -u "$DOCKER_USER" -p "$DOCKER_PW"
     # Default branch leaves tag empty (= latest tag)
