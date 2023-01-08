@@ -4,6 +4,9 @@ docker-build:
   # Use the official docker image.
   image: docker:19
   stage: build
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
   tags:
     - arm64
   services:
