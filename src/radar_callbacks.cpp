@@ -133,6 +133,7 @@ void Radar::on_adc_config_received(void *context, int32_t protocol_handle, uint8
 {
     auto radar = (Radar*) context;
     radar->settings["sampling"]["frequency Hz"] = adc_configuration->samplerate_Hz;
+    radar->settings["resolution"]["bits"] = adc_configuration->resolution;
 
     radar->on_settings_changed();
 }
